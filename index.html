@@ -433,7 +433,7 @@
                 engineOsc.frequency.setTargetAtTime(pitch, audioCtx.currentTime, 0.1);
             }
             
-            if (isGameRunning || gameMode === 'builder') {
+            if (isGameRunning || gameMode === 'builder' || isArcadeRunning) {
                 if (audioCtx.currentTime > nextNoteTime - 0.05) {
                     const isInverted = isGameRunning && Date.now() < invertEndTime;
                     const isBoosted = isGameRunning && Date.now() < boostEndTime;
@@ -1691,6 +1691,10 @@
             arcCanvas = document.getElementById('arcadeCanvas');
             arcCtx = arcCanvas.getContext('2d');
             isArcadeRunning = true;
+            initAudio();
+            if (audioCtx) {
+                nextNoteTime = audioCtx.currentTime + 0.1;
+            }
             arcGameOver = false;
             arcCar.x = 185;
             arcObs = [];
@@ -1708,6 +1712,7 @@
         function arcadeLoop() {
             if (!isArcadeRunning) return;
             requestAnimationFrame(arcadeLoop);
+            updateAudio();
 
             if (arcGameOver) return;
 
