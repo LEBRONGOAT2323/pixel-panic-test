@@ -345,7 +345,7 @@
         let tractionLevel = 0;
         let armorLevel = 0;
         let nitroCount = 0;
-        const MAX_UPGRADE_LEVEL = 5;
+        const MAX_UPGRADE_LEVEL = 10;
         let distanceTraveled = 0;
 
         // Custom Map Grid Constants
@@ -1088,7 +1088,7 @@
             showMainMenu();
         }
 
-        function showMainMenu(title = "PIXEL RACING", subtitle = "", isCrash = false) {
+        function showMainMenu(title = "PIXEL PANIC", subtitle = "", isCrash = false) {
             isGameRunning = false;
             gameMode = 'menu';
             invertEndTime = 0; 
@@ -1114,7 +1114,7 @@
         function exitToMenu() {
             let earned = Math.floor(distanceTraveled / 10);
             totalCoins += earned;
-            showMainMenu("PIXEL RACING", `<span style="color:#00ffff;">Distance Bonus: +${earned} Coins</span>`);
+            showMainMenu("PIXEL PANIC", `<span style="color:#00ffff;">Distance Bonus: +${earned} Coins</span>`);
         }
 
         function startGame(mode, difficulty = 'normal') {
