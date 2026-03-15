@@ -298,19 +298,19 @@
     <div id="builder-ui">
         <div id="builder-toolbar">
             <h2>MAP BUILDER</h2>
-            <button class="tool-btn active" data-tool="road"><div class="tool-icon icon-road"></div> Asphalt</button>
-            <button class="tool-btn" data-tool="grass"><div class="tool-icon icon-grass"></div> Grass (Eraser)</button>
-            <button class="tool-btn" data-tool="tree"><div class="tool-icon icon-tree"></div> Tree</button>
-            <button class="tool-btn" data-tool="rock"><div class="tool-icon icon-rock"></div> Rock</button>
-            <button class="tool-btn" data-tool="trash"><div class="tool-icon icon-trash"></div> Trash Bag</button>
-            <button class="tool-btn" data-tool="pinktrash"><div class="tool-icon icon-pinktrash"></div> Pink Trash</button>
-            <button class="tool-btn" data-tool="car"><div class="tool-icon icon-car"></div> Enemy Car</button>
-            <button class="tool-btn" data-tool="rager"><div class="tool-icon icon-rager"></div> Road Rager</button>
-            <button class="tool-btn" data-tool="crash"><div class="tool-icon icon-crash"></div> Car Crash</button>
-            <button class="tool-btn" data-tool="ramp"><div class="tool-icon icon-ramp"></div> Car Ramp</button>
-            <button class="tool-btn" data-tool="gas"><div class="tool-icon icon-gas"></div> Gas Can</button>
-            <button class="tool-btn" data-tool="pothole"><div class="tool-icon icon-pothole"></div> Pothole</button>
-            <button class="tool-btn" data-tool="autoshop"><div class="tool-icon icon-autoshop"></div> Auto Shop</button>
+            <button class="tool-btn active" data-tool="road"><div class="tool-icon icon-road"></div> Asphalt <span style="color:#ffcc00;">[1]</span></button>
+            <button class="tool-btn" data-tool="grass"><div class="tool-icon icon-grass"></div> Grass (Eraser) <span style="color:#ffcc00;">[2]</span></button>
+            <button class="tool-btn" data-tool="tree"><div class="tool-icon icon-tree"></div> Tree <span style="color:#ffcc00;">[3]</span></button>
+            <button class="tool-btn" data-tool="rock"><div class="tool-icon icon-rock"></div> Rock <span style="color:#ffcc00;">[4]</span></button>
+            <button class="tool-btn" data-tool="trash"><div class="tool-icon icon-trash"></div> Trash Bag <span style="color:#ffcc00;">[5]</span></button>
+            <button class="tool-btn" data-tool="pinktrash"><div class="tool-icon icon-pinktrash"></div> Pink Trash <span style="color:#ffcc00;">[6]</span></button>
+            <button class="tool-btn" data-tool="car"><div class="tool-icon icon-car"></div> Enemy Car <span style="color:#ffcc00;">[7]</span></button>
+            <button class="tool-btn" data-tool="rager"><div class="tool-icon icon-rager"></div> Road Rager <span style="color:#ffcc00;">[8]</span></button>
+            <button class="tool-btn" data-tool="crash"><div class="tool-icon icon-crash"></div> Car Crash <span style="color:#ffcc00;">[9]</span></button>
+            <button class="tool-btn" data-tool="ramp"><div class="tool-icon icon-ramp"></div> Car Ramp <span style="color:#ffcc00;">[0]</span></button>
+            <button class="tool-btn" data-tool="gas"><div class="tool-icon icon-gas"></div> Gas Can <span style="color:#ffcc00;">[Q]</span></button>
+            <button class="tool-btn" data-tool="pothole"><div class="tool-icon icon-pothole"></div> Pothole <span style="color:#ffcc00;">[E]</span></button>
+            <button class="tool-btn" data-tool="autoshop"><div class="tool-icon icon-autoshop"></div> Auto Shop <span style="color:#ffcc00;">[R]</span></button>
             <div style="flex-grow: 1;"></div>
             <hr style="border-color: #444; margin: 20px 0;">
             <p style="font-size: 12px; color: #aaa; margin-top:0;">Paint your track. Grass will crash your car! Reach the top row to win.</p>
@@ -1219,8 +1219,40 @@
             showMainMenu('YOU WIN!', subtitle, false);
         }
 
+        // --- Builder Keybind Map ---
+        const builderKeyMap = {
+            '1': 'road',
+            '2': 'grass',
+            '3': 'tree',
+            '4': 'rock',
+            '5': 'trash',
+            '6': 'pinktrash',
+            '7': 'car',
+            '8': 'rager',
+            '9': 'crash',
+            '0': 'ramp',
+            'q': 'gas',
+            'e': 'pothole',
+            'r': 'autoshop'
+        };
+
+        function selectBuilderTool(toolName) {
+            currentTool = toolName;
+            document.querySelectorAll('.tool-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.tool === toolName);
+            });
+        }
+
         // --- Input Handling ---
         window.addEventListener('keydown', (e) => {
+            // Builder mode keybinds
+            if (gameMode === 'builder') {
+                const tool = builderKeyMap[e.key.toLowerCase()];
+                if (tool) {
+                    selectBuilderTool(tool);
+                    return;
+                }
+            }
             if (e.key === 'a' || e.key === 'A') keys.a = true;
             if (e.key === 'd' || e.key === 'D') keys.d = true;
             if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.up = true;
