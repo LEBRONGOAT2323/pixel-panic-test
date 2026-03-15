@@ -33,6 +33,7 @@ This repository exists to experiment with features, test mechanics, and preview 
 | **A**     | Steer Left      |
 | **D**     | Steer Right     |
 | **SHIFT** | Nitro Boost     |
+| **F3**    | Debug menu      |
 
 ---
 
