@@ -3,29 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pixel panic</title>
+    <title>Pixel Panic</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            background-color: #87CEEB; /* Sky blue */
+            background-color: #87CEEB;
             font-family: 'Courier New', Courier, monospace;
             color: #ffffff;
             user-select: none;
         }
 
-        /* Pixel art rendering for the 3D canvas */
         #gameCanvas {
             width: 100vw;
             height: 100vh;
             display: block;
-            image-rendering: -moz-crisp-edges;
-            image-rendering: -webkit-crisp-edges;
             image-rendering: pixelated;
             image-rendering: crisp-edges;
         }
 
-        /* In-Game UI */
         #ui {
             position: absolute;
             top: 20px;
@@ -54,7 +50,7 @@
             border: 2px solid #fff;
             display: inline-block;
         }
-        
+
         .key { color: #ffcc00; font-weight: bold; }
 
         .btn {
@@ -75,7 +71,6 @@
         .btn:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0px 0px 0 #000; }
         .btn:disabled { background: #555 !important; color: #aaa; cursor: not-allowed; }
 
-        /* Main Menu / Overlay */
         #overlay {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -101,7 +96,108 @@
             flex-direction: column;
         }
 
-        /* Upgrades Menu */
+        /* ── COMBO DISPLAY ── */
+        #combo-display {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            text-align: center;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        #combo-text {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ff8800;
+            text-shadow: 3px 3px 0 #000, -1px -1px 0 #000;
+            display: none;
+        }
+        #combo-mult {
+            font-size: 22px;
+            color: #ffcc00;
+            text-shadow: 2px 2px 0 #000;
+            display: none;
+        }
+
+        /* ── DRIFT DISPLAY ── */
+        #drift-display {
+            position: absolute;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 15;
+            pointer-events: none;
+            text-align: center;
+        }
+        #drift-text {
+            font-size: 32px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 3px 3px 0 #000;
+            display: none;
+            animation: driftPulse 0.4s ease-in-out infinite alternate;
+        }
+        @keyframes driftPulse {
+            from { transform: scale(1) rotate(-2deg); }
+            to   { transform: scale(1.1) rotate(2deg); }
+        }
+
+        /* ── CHECKPOINT DISPLAY ── */
+        #checkpoint-display {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 15;
+            pointer-events: none;
+            text-align: center;
+            display: none;
+        }
+        #checkpoint-text {
+            font-size: 52px;
+            font-weight: bold;
+            color: #00ff88;
+            text-shadow: 4px 4px 0 #000;
+            animation: cpPop 0.5s ease-out forwards;
+        }
+        #checkpoint-sub {
+            font-size: 24px;
+            color: #ffcc00;
+            text-shadow: 2px 2px 0 #000;
+        }
+        @keyframes cpPop {
+            0%   { transform: scale(0.5); opacity: 0; }
+            60%  { transform: scale(1.15); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* ── FLOATING COIN TEXT ── */
+        .float-text {
+            position: absolute;
+            font-size: 22px;
+            font-weight: bold;
+            color: #ffcc00;
+            text-shadow: 2px 2px 0 #000;
+            pointer-events: none;
+            z-index: 16;
+            animation: floatUp 1.2s ease-out forwards;
+        }
+        @keyframes floatUp {
+            0%   { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-60px); }
+        }
+
+        /* ── CHECKPOINT MARKER (road sign style) ── */
+        .checkpoint-hud {
+            font-size: 16px;
+            color: #00ff88;
+            font-weight: bold;
+            margin-top: 4px;
+            text-shadow: 2px 2px 0 #000;
+        }
+
         #upgrades-ui {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.9); z-index: 25; display: none;
@@ -121,7 +217,6 @@
             .upgrade-item span { width: 100%; }
         }
 
-        /* Map Builder UI */
         #builder-ui {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -169,6 +264,7 @@
         .icon-pothole { background: #111; border-radius: 50%; box-shadow: inset 2px 2px 5px #000; }
         .icon-autoshop { background: #555; position: relative; }
         .icon-autoshop::after { content: '+'; color: #33ff33; font-weight: bold; position: absolute; top: -2px; left: 4px; }
+        .icon-coin { background: #ffcc00; border-radius: 50%; }
 
         #builder-workspace {
             flex-grow: 1;
@@ -177,7 +273,7 @@
             padding: 40px;
             display: flex;
             justify-content: center;
-            align-items: flex-end; /* Start at bottom */
+            align-items: flex-end;
             background: #1a1a1a;
         }
 
@@ -189,13 +285,12 @@
         }
 
         .grid-cell {
-            width: 12px; height: 12px; 
-            background-color: #3a873a; 
+            width: 12px; height: 12px;
+            background-color: #3a873a;
             cursor: crosshair;
             position: relative;
         }
-        
-        /* Visuals for grid items */
+
         .cell-road { background-color: #666; }
         .cell-tree::after { content: ''; position: absolute; top:1px; left:1px; right:1px; bottom:1px; background: #2e8b57; border-radius: 50%; border: 1px solid #000; }
         .cell-rock::after { content: ''; position: absolute; top:2px; left:2px; right:2px; bottom:2px; background: #888; border: 1px solid #000; }
@@ -208,15 +303,13 @@
         .cell-gas::after { content: ''; position: absolute; top:2px; left:2px; right:2px; bottom:2px; background: #ff0000; border: 1px solid #000; }
         .cell-pothole::after { content: ''; position: absolute; top:2px; left:2px; right:2px; bottom:2px; background: #111; border-radius: 50%; border: 1px solid #000; }
         .cell-autoshop::after { content: '+'; color: #33ff33; font-size: 10px; display: flex; justify-content: center; align-items: center; position: absolute; top:1px; left:1px; right:1px; bottom:1px; background: #555; border: 1px solid #000; }
-        
-        /* Finish line visually on top row */
+        .cell-coin::after { content: '$'; color: #000; font-size: 9px; display: flex; justify-content: center; align-items: center; position: absolute; top:1px; left:1px; right:1px; bottom:1px; background: #ffcc00; border-radius: 50%; border: 1px solid #000; font-weight: bold; }
+
         .finish-line-row .cell-road { background-image: repeating-linear-gradient(45deg, #fff 0, #fff 5px, #000 5px, #000 10px); }
 
-        /* Debug Overlay */
         #debug-overlay {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 10px; right: 10px;
             z-index: 50;
             background: rgba(0, 0, 0, 0.75);
             color: #00ff00;
@@ -230,21 +323,9 @@
             min-width: 260px;
             line-height: 1.6;
         }
-        #debug-overlay .debug-title {
-            color: #ffcc00;
-            font-weight: bold;
-            font-size: 16px;
-            margin-bottom: 6px;
-            border-bottom: 1px solid #00ff00;
-            padding-bottom: 4px;
-        }
-        #debug-overlay .debug-section {
-            color: #00ccff;
-            font-weight: bold;
-            margin-top: 6px;
-        }
+        #debug-overlay .debug-title { color: #ffcc00; font-weight: bold; font-size: 16px; margin-bottom: 6px; border-bottom: 1px solid #00ff00; padding-bottom: 4px; }
+        #debug-overlay .debug-section { color: #00ccff; font-weight: bold; margin-top: 6px; }
 
-        /* Arcade UI */
         #arcade-ui {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 35; display: none;
@@ -256,7 +337,6 @@
             box-shadow: 0 0 20px #ffcc00;
             image-rendering: pixelated;
         }
-
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
@@ -270,7 +350,9 @@
         <div id="debug-speed">Speed: 0</div>
         <div id="debug-position">Pos: 0, 0, 0</div>
         <div id="debug-angle">Angle: 0</div>
-        <div class="debug-section">Collision</div>
+        <div class="debug-section">Gameplay</div>
+        <div id="debug-combo">Combo: 0</div>
+        <div id="debug-drift">Drifting: No</div>
         <div id="debug-collisions">Boxes: OFF</div>
     </div>
 
@@ -280,6 +362,8 @@
             <div id="speedometer">0 MPH</div>
             <div id="health-bar" style="font-size: 24px; color: #ff4444; font-weight: bold; margin-top: 5px; text-shadow: 2px 2px 0px #000;">Health: 100</div>
             <div id="nitro-hud" style="font-size: 20px; color: #00ffff; font-weight: bold; margin-top: 5px; text-shadow: 2px 2px 0px #000;">Nitro: 0 [SHIFT]</div>
+            <div id="session-coins-hud" style="font-size: 18px; color: #ffcc00; font-weight: bold; margin-top: 5px; text-shadow: 2px 2px 0px #000;">Coins: 0</div>
+            <div id="checkpoint-hud" class="checkpoint-hud">Next CP: --</div>
             <div id="instructions">
                 Controls:<br>
                 <span class="key">A</span> - Steer Left<br>
@@ -292,6 +376,23 @@
         <div>
             <button class="btn" onclick="exitToMenu()">Exit to Menu</button>
         </div>
+    </div>
+
+    <!-- Combo Display (top center) -->
+    <div id="combo-display">
+        <div id="combo-text">COMBO x0</div>
+        <div id="combo-mult">+0% coins</div>
+    </div>
+
+    <!-- Drift Display (bottom center) -->
+    <div id="drift-display">
+        <div id="drift-text">⟳ DRIFTING!</div>
+    </div>
+
+    <!-- Checkpoint Popup (center) -->
+    <div id="checkpoint-display">
+        <div id="checkpoint-text">CHECKPOINT!</div>
+        <div id="checkpoint-sub">+50 Coins</div>
     </div>
 
     <!-- Main Menu -->
@@ -355,6 +456,7 @@
             <button class="tool-btn" data-tool="gas"><div class="tool-icon icon-gas"></div> Gas Can <span style="color:#ffcc00;">[Q]</span></button>
             <button class="tool-btn" data-tool="pothole"><div class="tool-icon icon-pothole"></div> Pothole <span style="color:#ffcc00;">[E]</span></button>
             <button class="tool-btn" data-tool="autoshop"><div class="tool-icon icon-autoshop"></div> Auto Shop <span style="color:#ffcc00;">[R]</span></button>
+            <button class="tool-btn" data-tool="coin"><div class="tool-icon icon-coin"></div> Coin Pickup <span style="color:#ffcc00;">[C]</span></button>
             <div style="flex-grow: 1;"></div>
             <hr style="border-color: #444; margin: 20px 0;">
             <p style="font-size: 12px; color: #aaa; margin-top:0;">Paint your track. Grass will crash your car! Reach the top row to win.</p>
@@ -373,39 +475,38 @@
         <button class="btn" onclick="closeArcade()" style="margin-top: 20px; background: #666;">Exit Arcade</button>
     </div>
 
-    <!-- The WebGL Canvas -->
     <canvas id="gameCanvas"></canvas>
 
     <script>
-        // --- Game Constants & Variables ---
-        const RESOLUTION_SCALE = 1; 
+        // ═══════════════════════════════════════════════════════════
+        //  CONSTANTS & BASE VARIABLES
+        // ═══════════════════════════════════════════════════════════
+        const RESOLUTION_SCALE = 1;
         const ROAD_WIDTH = 30;
-        const CHUNK_SIZE = 400; 
-        
-        let gameMode = 'menu'; 
-        
-        // Progression System Variables
-        let totalCoins = 200; // Starting money
+        const CHUNK_SIZE = 400;
+
+        let gameMode = 'menu';
+
+        let totalCoins = 200;
         let tractionLevel = 0;
         let armorLevel = 0;
         let nitroCount = 0;
         const MAX_UPGRADE_LEVEL = 10;
         let distanceTraveled = 0;
+        let sessionCoins = 0; // coins earned this run (shown live)
 
-        // Custom Map Grid Constants
-        const GRID_ROWS = 150; 
-        const GRID_COLS = 35;  
-        const CELL_SIZE = 10;  
+        const GRID_ROWS = 150;
+        const GRID_COLS = 35;
+        const CELL_SIZE = 10;
 
-        // Physics variables
         let speed = 0;
         let angle = 0;
         let isGameRunning = false;
-        
-        let maxSpeed = 0.45; 
-        const BASE_MAX_SPEED = 0.45; 
+
+        let maxSpeed = 0.45;
+        const BASE_MAX_SPEED = 0.45;
         const OFFROAD_MAX_SPEED = 0.15;
-        const ACCELERATION = 0.006; 
+        const ACCELERATION = 0.006;
         const BRAKING = 0.01;
         const FRICTION = 0.002;
         const TURN_SPEED = 0.03;
@@ -415,53 +516,231 @@
 
         const keys = { a: false, d: false, up: false, down: false, shift: false };
         let health = 100;
-        let maxHealth = 100; // Stores the starting health cap
+        let maxHealth = 100;
         let invertEndTime = 0;
         let boostEndTime = 0;
-        let slowEndTime = 0; 
+        let slowEndTime = 0;
         let ragerImmunity = false;
 
-        // Secret Cheat Code Variable
         let cheatCodeInput = "";
 
-        // --- Audio System (Web Audio API) ---
+        // ═══════════════════════════════════════════════════════════
+        //  NEW: COMBO SYSTEM
+        // ═══════════════════════════════════════════════════════════
+        let comboCount = 0;          // how many obstacles dodged in a row
+        let comboTimer = 0;          // ms until combo resets (reset on each dodge)
+        const COMBO_WINDOW = 4000;   // 4 s to keep combo alive
+        const COMBO_DECAY_DIST = 800; // distance units before combo decays naturally
+
+        function incrementCombo() {
+            comboCount++;
+            comboTimer = COMBO_WINDOW;
+            updateComboUI();
+            playComboSound();
+        }
+
+        function resetCombo() {
+            if (comboCount > 0) {
+                comboCount = 0;
+                updateComboUI();
+            }
+        }
+
+        function getComboMultiplier() {
+            // 1x at 0, up to 5x at combo 20+
+            return Math.min(1 + Math.floor(comboCount / 3) * 0.5, 5);
+        }
+
+        function updateComboUI() {
+            const ct = document.getElementById('combo-text');
+            const cm = document.getElementById('combo-mult');
+            if (comboCount >= 3) {
+                ct.style.display = 'block';
+                cm.style.display = 'block';
+                ct.innerText = `COMBO x${comboCount}`;
+                const mult = getComboMultiplier();
+                cm.innerText = `+${Math.round((mult - 1) * 100)}% coins`;
+                ct.style.color = comboCount >= 10 ? '#ff00ff' : comboCount >= 6 ? '#ff4400' : '#ff8800';
+            } else {
+                ct.style.display = 'none';
+                cm.style.display = 'none';
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  NEW: DRIFT SYSTEM
+        // ═══════════════════════════════════════════════════════════
+        let isDrifting = false;
+        let driftAngle = 0;        // accumulated drift rotation
+        let driftCoins = 0;        // coins earned from current drift
+        const DRIFT_THRESHOLD_SPEED  = 0.34;   // min speed to start drift (raised)
+        const DRIFT_THRESHOLD_ANGLE  = 0.018;  // min turn rate
+        const DRIFT_HOLD_FRAMES      = 22;     // frames you must hold the turn before drift kicks in
+        const DRIFT_COIN_RATE        = 0.4;    // coins per frame while drifting (fractional, accumulated)
+        let driftCoinAccum = 0;
+        let driftHoldCounter = 0;  // counts up while turn is held at speed
+
+        function updateDrift() {
+            if (!isGameRunning) return;
+
+            const turning = keys.a || keys.d;
+            const fast = Math.abs(speed) > DRIFT_THRESHOLD_SPEED;
+            const currentTurnSpeed = TURN_SPEED + (tractionLevel * 0.005);
+
+            // Increment hold counter while conditions are met, reset otherwise
+            if (turning && fast && currentTurnSpeed > DRIFT_THRESHOLD_ANGLE) {
+                driftHoldCounter = Math.min(driftHoldCounter + 1, DRIFT_HOLD_FRAMES + 1);
+            } else {
+                driftHoldCounter = 0;
+            }
+
+            const nowDrifting = driftHoldCounter >= DRIFT_HOLD_FRAMES;
+
+            if (nowDrifting && !isDrifting) {
+                // Start drift
+                isDrifting = true;
+                driftCoins = 0;
+                driftCoinAccum = 0;
+                document.getElementById('drift-text').style.display = 'block';
+            } else if (!nowDrifting && isDrifting) {
+                // End drift — award coins
+                isDrifting = false;
+                document.getElementById('drift-text').style.display = 'none';
+                if (driftCoins > 0) {
+                    awardCoins(driftCoins, 'drift');
+                    incrementCombo(); // drifts also feed combo!
+                }
+                driftCoins = 0;
+            }
+
+            if (isDrifting) {
+                driftCoinAccum += DRIFT_COIN_RATE * getComboMultiplier();
+                const earned = Math.floor(driftCoinAccum);
+                if (earned > 0) {
+                    driftCoins += earned;
+                    driftCoinAccum -= earned;
+                }
+                document.getElementById('drift-text').innerText = `⟳ DRIFTING! +${driftCoins}c`;
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  NEW: CHECKPOINT SYSTEM
+        // ═══════════════════════════════════════════════════════════
+        const CHECKPOINT_INTERVAL = 500;   // every 500 distance units
+        let nextCheckpointAt = CHECKPOINT_INTERVAL;
+        let checkpointCount = 0;
+        let checkpointDisplayTimeout = null;
+
+        function checkCheckpoints() {
+            if (!isGameRunning || gameMode !== 'endless') return;
+            if (distanceTraveled >= nextCheckpointAt) {
+                checkpointCount++;
+                nextCheckpointAt += CHECKPOINT_INTERVAL;
+                const reward = 50 + checkpointCount * 10; // escalating reward
+                awardCoins(reward, 'checkpoint');
+                showCheckpointBanner(checkpointCount, reward);
+                playCheckpointSound();
+                spawnCheckpointCoins();
+            }
+            // Update HUD
+            const remaining = Math.max(0, Math.round(nextCheckpointAt - distanceTraveled));
+            document.getElementById('checkpoint-hud').innerText = `Next CP: ${remaining}m`;
+        }
+
+        function showCheckpointBanner(num, reward) {
+            const disp = document.getElementById('checkpoint-display');
+            const txt  = document.getElementById('checkpoint-text');
+            const sub  = document.getElementById('checkpoint-sub');
+            txt.innerText = `CHECKPOINT ${num}!`;
+            sub.innerText = `+${reward} Coins`;
+            disp.style.display = 'block';
+            // force animation replay
+            txt.style.animation = 'none';
+            txt.offsetHeight; // reflow
+            txt.style.animation = 'cpPop 0.5s ease-out forwards';
+
+            if (checkpointDisplayTimeout) clearTimeout(checkpointDisplayTimeout);
+            checkpointDisplayTimeout = setTimeout(() => {
+                disp.style.display = 'none';
+            }, 2500);
+        }
+
+        // Spawn a burst of coin pickups ahead of the player after a checkpoint
+        function spawnCheckpointCoins() {
+            for (let i = 0; i < 6; i++) {
+                const coin = createCoinPickup();
+                coin.position.set(
+                    (Math.random() - 0.5) * (ROAD_WIDTH - 6),
+                    0,
+                    car.position.z - 80 - i * 15
+                );
+                endlessGroup.add(coin);
+                endlessObstacles.push(coin);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  COIN AWARD HELPER  (handles multiplier & floating text)
+        // ═══════════════════════════════════════════════════════════
+        function awardCoins(baseAmount, source) {
+            const mult = getComboMultiplier();
+            const total = Math.round(baseAmount * (source === 'checkpoint' ? 1 : mult));
+            sessionCoins += total;
+            totalCoins   += total;
+            document.getElementById('session-coins-hud').innerText = `Coins: ${sessionCoins}`;
+            document.getElementById('menu-coins').innerText = `Total Coins: ${totalCoins}`;
+            showFloatingCoins(total, source);
+        }
+
+        function showFloatingCoins(amount, source) {
+            // Only show a popup for significant events (checkpoints), not every coin/drift tick
+            if (source !== 'checkpoint') return;
+            const el = document.createElement('div');
+            el.className = 'float-text';
+            el.innerText = `+${amount}c`;
+            el.style.color = '#00ff88';
+            el.style.fontSize = '28px';
+            el.style.left = (window.innerWidth / 2 - 30) + 'px';
+            el.style.top  = (window.innerHeight / 2 + 60) + 'px';
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1300);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  AUDIO SYSTEM
+        // ═══════════════════════════════════════════════════════════
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         let audioCtx;
         let engineOsc, engineGain;
         let isAudioInitialized = false;
-        
+
         let nextNoteTime = 0;
         let noteIndex = 0;
-        const musicMelody = [130.81, 130.81, 155.56, 155.56, 174.61, 174.61, 155.56, 155.56]; 
+        const musicMelody = [130.81, 130.81, 155.56, 155.56, 174.61, 174.61, 155.56, 155.56];
 
         function initAudio() {
             if (isAudioInitialized) return;
             audioCtx = new AudioContext();
-            
             engineOsc = audioCtx.createOscillator();
             engineOsc.type = 'sawtooth';
             engineOsc.frequency.setValueAtTime(50, audioCtx.currentTime);
-            
             engineGain = audioCtx.createGain();
-            engineGain.gain.setValueAtTime(0, audioCtx.currentTime); 
-            
+            engineGain.gain.setValueAtTime(0, audioCtx.currentTime);
             engineOsc.connect(engineGain);
             engineGain.connect(audioCtx.destination);
             engineOsc.start();
-            
             isAudioInitialized = true;
         }
 
         function playTone(freq, type, duration, vol=0.1) {
-            if(!audioCtx) return;
+            if (!audioCtx) return;
             const osc = audioCtx.createOscillator();
             const gain = audioCtx.createGain();
             osc.type = type;
             osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-            
             gain.gain.setValueAtTime(vol, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
-            
             osc.connect(gain);
             gain.connect(audioCtx.destination);
             osc.start();
@@ -470,84 +749,63 @@
 
         function updateAudio() {
             if (!audioCtx) return;
-            
             if (isGameRunning) {
                 const speedRatio = Math.abs(speed) / BASE_MAX_SPEED;
-                const pitch = 40 + (speedRatio * 150); 
+                const pitch = 40 + (speedRatio * 150);
                 engineOsc.frequency.setTargetAtTime(pitch, audioCtx.currentTime, 0.1);
             }
-            
             if (isGameRunning || gameMode === 'builder' || isArcadeRunning) {
                 if (audioCtx.currentTime > nextNoteTime - 0.05) {
                     const isInverted = isGameRunning && Date.now() < invertEndTime;
-                    const isBoosted = isGameRunning && Date.now() < boostEndTime;
-
-                    let noteSpeed = gameMode === 'builder' ? 0.35 : (isInverted ? 0.12 : 0.2); 
-                    if (isBoosted) noteSpeed *= 0.7; // Faster music during boost
-                    
+                    const isBoosted  = isGameRunning && Date.now() < boostEndTime;
+                    let noteSpeed = gameMode === 'builder' ? 0.35 : (isInverted ? 0.12 : 0.2);
+                    if (isBoosted) noteSpeed *= 0.7;
                     const waveType = gameMode === 'builder' ? 'triangle' : 'square';
-                    
                     let freq = musicMelody[noteIndex];
-                    if (isInverted) {
-                        const reverseIndex = (musicMelody.length - 1) - noteIndex;
-                        freq = musicMelody[reverseIndex] * 4;
-                    }
-                    if (isBoosted) freq *= 1.5; // Pitch up for boost excitement
-                    
-                    playTone(freq, waveType, noteSpeed * 0.75, 0.03); 
-                    nextNoteTime = audioCtx.currentTime + noteSpeed; 
+                    if (isInverted) freq = musicMelody[(musicMelody.length - 1) - noteIndex] * 4;
+                    if (isBoosted)  freq *= 1.5;
+                    playTone(freq, waveType, noteSpeed * 0.75, 0.03);
+                    nextNoteTime = audioCtx.currentTime + noteSpeed;
                     noteIndex = (noteIndex + 1) % musicMelody.length;
                 }
             }
         }
-        
+
         function playCrashSound() {
-            if(!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.type = 'square';
             osc.frequency.setValueAtTime(150, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.5);
             gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.5);
         }
 
         function playHitSound() {
-            if(!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.type = 'square';
             osc.frequency.setValueAtTime(100, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.2);
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.2);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.2);
         }
 
         function playHealSound() {
-            if(!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.type = 'sine';
             osc.frequency.setValueAtTime(600, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
             gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.1);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.1);
         }
 
         function playPowerupSound() {
-            if(!audioCtx) return;
+            if (!audioCtx) return;
             setTimeout(() => playTone(523.25, 'square', 0.1, 0.1), 0);
             setTimeout(() => playTone(659.25, 'square', 0.1, 0.1), 100);
             setTimeout(() => playTone(783.99, 'square', 0.1, 0.1), 200);
@@ -555,47 +813,64 @@
         }
 
         function playBoostSound() {
-            if(!audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(300, audioCtx.currentTime);
             osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 1.5);
             gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 2.0);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 2.0);
+            osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 2.0);
         }
 
         function playWinSound() {
-            if(!audioCtx) return;
+            if (!audioCtx) return;
             setTimeout(() => playTone(440, 'square', 0.2, 0.1), 0);
             setTimeout(() => playTone(554, 'square', 0.2, 0.1), 200);
             setTimeout(() => playTone(659, 'square', 0.2, 0.1), 400);
             setTimeout(() => playTone(880, 'square', 0.4, 0.1), 600);
         }
 
-        // --- Three.js Setup ---
+        function playComboSound() {
+            if (!audioCtx) return;
+            const pitch = 300 + comboCount * 25;
+            playTone(Math.min(pitch, 1200), 'square', 0.08, 0.06);
+        }
+
+        function playCoinSound() {
+            if (!audioCtx) return;
+            playTone(880, 'sine', 0.12, 0.08);
+            setTimeout(() => playTone(1320, 'sine', 0.1, 0.06), 60);
+        }
+
+        function playCheckpointSound() {
+            if (!audioCtx) return;
+            setTimeout(() => playTone(523, 'square', 0.15, 0.08), 0);
+            setTimeout(() => playTone(659, 'square', 0.15, 0.08), 120);
+            setTimeout(() => playTone(784, 'square', 0.15, 0.08), 240);
+            setTimeout(() => playTone(1047, 'square', 0.3,  0.1),  360);
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  THREE.JS SETUP
+        // ═══════════════════════════════════════════════════════════
         const canvas = document.getElementById('gameCanvas');
         const renderer = new THREE.WebGLRenderer({ canvas, antialias: false });
         renderer.shadowMap.enabled = true;
         renderer.shadowMap.type = THREE.BasicShadowMap;
-        
+
         const scene = new THREE.Scene();
         scene.background = new THREE.Color(0x87CEEB);
         scene.fog = new THREE.Fog(0x87CEEB, 100, 300);
 
         const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 500);
-        
-        // Scene Groups
+
         const endlessGroup = new THREE.Group();
-        const customGroup = new THREE.Group();
+        const customGroup  = new THREE.Group();
         scene.add(endlessGroup);
         scene.add(customGroup);
 
-        // --- Texture Generators ---
+        // ── Textures ──
         function createPixelTexture(width, height, drawFunc) {
             const texCanvas = document.createElement('canvas');
             texCanvas.width = width; texCanvas.height = height;
@@ -618,41 +893,43 @@
 
         const plainRoadTexture = createPixelTexture(32, 32, (ctx, w, h) => {
             ctx.fillStyle = '#444444'; ctx.fillRect(0, 0, w, h);
-            ctx.fillStyle = '#ffffff'; ctx.fillRect((w / 2) - 2, 0, 4, h / 2); 
+            ctx.fillStyle = '#ffffff'; ctx.fillRect((w / 2) - 2, 0, 4, h / 2);
         });
 
         const grassTexture = createPixelTexture(32, 32, (ctx, w, h) => {
             ctx.fillStyle = '#3a873a'; ctx.fillRect(0, 0, w, h);
-            for(let i=0; i<30; i++) {
+            for (let i = 0; i < 30; i++) {
                 ctx.fillStyle = Math.random() > 0.5 ? '#429e42' : '#2d6a2d';
                 ctx.fillRect(Math.floor(Math.random()*w), Math.floor(Math.random()*h), 1, 1);
             }
         });
 
-        // --- Shared World Items ---
+        // ── Lights ──
         const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
         scene.add(ambientLight);
 
         const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
         dirLight.position.set(50, 100, 20);
         dirLight.castShadow = true;
-        dirLight.shadow.mapSize.width = 512;
+        dirLight.shadow.mapSize.width  = 512;
         dirLight.shadow.mapSize.height = 512;
-        dirLight.shadow.camera.near = 0.5; dirLight.shadow.camera.far = 300;
+        dirLight.shadow.camera.near = 0.5; dirLight.shadow.camera.far  = 300;
         dirLight.shadow.camera.left = -100; dirLight.shadow.camera.right = 100;
-        dirLight.shadow.camera.top = 100; dirLight.shadow.camera.bottom = -100;
+        dirLight.shadow.camera.top  = 100; dirLight.shadow.camera.bottom = -100;
         scene.add(dirLight);
 
-        // --- Car Construction ---
-        let carChassisMesh; 
+        // ── Player Car ──
+        let carChassisMesh;
         const car = new THREE.Group();
-        const carBodyGroup = new THREE.Group(); 
+        const carBodyGroup = new THREE.Group();
         car.add(carBodyGroup);
 
         carChassisMesh = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 4.4), new THREE.MeshLambertMaterial({ color: 0xd92b2b }));
         carChassisMesh.position.y = 0.6; carChassisMesh.castShadow = true; carBodyGroup.add(carChassisMesh);
+
         const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2.2), new THREE.MeshLambertMaterial({ color: 0x111111 }));
         cabin.position.set(0, 1.2, -0.2); cabin.castShadow = true; carBodyGroup.add(cabin);
+
         const roof = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.1, 2.2), new THREE.MeshLambertMaterial({ color: 0xeeeeee }));
         roof.position.set(0, 1.55, -0.2); roof.castShadow = true; carBodyGroup.add(roof);
 
@@ -661,6 +938,36 @@
         lightL.position.set(-0.7, 0.6, -2.25); carBodyGroup.add(lightL);
         const lightR = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.1), lightMat);
         lightR.position.set(0.7, 0.6, -2.25); carBodyGroup.add(lightR);
+
+        // Drift smoke particles (simple cubes that fade)
+        const driftParticles = [];
+        const driftParticleMat = new THREE.MeshBasicMaterial({ color: 0xcccccc, transparent: true });
+
+        function spawnDriftParticle() {
+            const geo  = new THREE.BoxGeometry(0.4, 0.4, 0.4);
+            const mat  = driftParticleMat.clone();
+            const mesh = new THREE.Mesh(geo, mat);
+            mesh.position.copy(car.position);
+            mesh.position.y = 0.3;
+            mesh.userData = { life: 1.0, vx: (Math.random()-0.5)*0.05, vz: (Math.random()-0.5)*0.05 };
+            scene.add(mesh);
+            driftParticles.push(mesh);
+        }
+
+        function updateDriftParticles() {
+            for (let i = driftParticles.length - 1; i >= 0; i--) {
+                const p = driftParticles[i];
+                p.userData.life -= 0.04;
+                p.position.x += p.userData.vx;
+                p.position.z += p.userData.vz;
+                p.position.y += 0.02;
+                p.material.opacity = p.userData.life;
+                if (p.userData.life <= 0) {
+                    scene.remove(p);
+                    driftParticles.splice(i, 1);
+                }
+            }
+        }
 
         const wheelGeo = new THREE.BoxGeometry(0.6, 0.8, 0.8);
         const wheelMat = new THREE.MeshLambertMaterial({ color: 0x050505 });
@@ -673,7 +980,9 @@
         carBodyGroup.add(camera);
         camera.position.set(0, 1.3, -0.5);
 
-        // --- Prefab Creators ---
+        // ═══════════════════════════════════════════════════════════
+        //  PREFAB CREATORS
+        // ═══════════════════════════════════════════════════════════
         function createTree() {
             const tree = new THREE.Group();
             const trunk = new THREE.Mesh(new THREE.BoxGeometry(0.8, 2, 0.8), new THREE.MeshLambertMaterial({ color: 0x5c4033 }));
@@ -693,13 +1002,14 @@
         function createEnemyCar() {
             const enemy = new THREE.Group();
             const colors = [0x2288e6, 0xe68822, 0x22e688, 0xe62288, 0xffffff];
-            const color = colors[Math.floor(Math.random() * colors.length)];
-            const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 4.4), new THREE.MeshLambertMaterial({ color: color }));
+            const color  = colors[Math.floor(Math.random() * colors.length)];
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 4.4), new THREE.MeshLambertMaterial({ color }));
             chassis.position.y = 0.6; chassis.castShadow = true; enemy.add(chassis);
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2.2), new THREE.MeshLambertMaterial({ color: 0x111111 }));
-            cabin.position.set(0, 1.2, -0.2); cabin.castShadow = true; enemy.add(cabin);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2.2), new THREE.MeshLambertMaterial({ color: 0x111111 }));
+            cab.position.set(0, 1.2, -0.2); cab.castShadow = true; enemy.add(cab);
             [[-1.1, 0.4, -1.3], [1.1, 0.4, -1.3], [-1.1, 0.4, 1.3], [1.1, 0.4, 1.3]].forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(...pos); wheel.castShadow = true; enemy.add(wheel);
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(...pos); wheel.castShadow = true; enemy.add(wheel);
             });
             enemy.userData = { speed: 0.05 + Math.random() * 0.15, type: 'car' };
             return enemy;
@@ -709,59 +1019,44 @@
             const enemy = new THREE.Group();
             const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 4.4), new THREE.MeshLambertMaterial({ color: 0x8b0000 }));
             chassis.position.y = 0.6; chassis.castShadow = true; enemy.add(chassis);
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2.2), new THREE.MeshLambertMaterial({ color: 0x111111 }));
-            cabin.position.set(0, 1.2, -0.2); cabin.castShadow = true; enemy.add(cabin);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2.2), new THREE.MeshLambertMaterial({ color: 0x111111 }));
+            cab.position.set(0, 1.2, -0.2); cab.castShadow = true; enemy.add(cab);
             [[-1.1, 0.4, -1.3], [1.1, 0.4, -1.3], [-1.1, 0.4, 1.3], [1.1, 0.4, 1.3]].forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(...pos); wheel.castShadow = true; enemy.add(wheel);
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(...pos); wheel.castShadow = true; enemy.add(wheel);
             });
             enemy.userData = { speed: (0.05 + Math.random() * 0.15) * 1.5, type: 'rager' };
             return enemy;
         }
 
-        // Helper function to build detailed stationary cars for our obstacles
         function buildStaticCar(color) {
-            const carGroup = new THREE.Group();
-            const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 4.4), new THREE.MeshLambertMaterial({ color: color }));
-            chassis.position.y = 0.6; chassis.castShadow = true; carGroup.add(chassis);
-            const cabin = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2.2), new THREE.MeshLambertMaterial({ color: 0x111111 }));
-            cabin.position.set(0, 1.2, -0.2); cabin.castShadow = true; carGroup.add(cabin);
+            const g = new THREE.Group();
+            const chassis = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.6, 4.4), new THREE.MeshLambertMaterial({ color }));
+            chassis.position.y = 0.6; chassis.castShadow = true; g.add(chassis);
+            const cab = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.6, 2.2), new THREE.MeshLambertMaterial({ color: 0x111111 }));
+            cab.position.set(0, 1.2, -0.2); cab.castShadow = true; g.add(cab);
             [[-1.1, 0.4, -1.3], [1.1, 0.4, -1.3], [-1.1, 0.4, 1.3], [1.1, 0.4, 1.3]].forEach(pos => {
-                const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(...pos); wheel.castShadow = true; carGroup.add(wheel);
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.position.set(...pos); wheel.castShadow = true; g.add(wheel);
             });
-            return carGroup;
+            return g;
         }
 
         function createCarCrash() {
             const crash = new THREE.Group();
-            
-            const car1 = buildStaticCar(0x333333);
-            car1.rotation.y = Math.PI / 4; 
-            crash.add(car1);
-            
-            const car2 = buildStaticCar(0x552222);
-            car2.position.set(1, 0, 1); 
-            car2.rotation.y = -Math.PI / 3; 
-            crash.add(car2);
-            
+            const car1 = buildStaticCar(0x333333); car1.rotation.y = Math.PI / 4; crash.add(car1);
+            const car2 = buildStaticCar(0x552222); car2.position.set(1, 0, 1); car2.rotation.y = -Math.PI / 3; crash.add(car2);
             const fire = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial({ color: 0xff5500 }));
-            fire.position.set(0, 1.8, 0); // Raised slightly to sit on top of the pile
-            crash.add(fire); 
-            
+            fire.position.set(0, 1.8, 0); crash.add(fire);
             crash.userData = { speed: 0, type: 'crash' };
             return crash;
         }
 
         function createCarRamp() {
             const ramp = new THREE.Group();
-            
-            const baseCar = buildStaticCar(0x2288e6);
-            ramp.add(baseCar);
-            
+            const baseCar = buildStaticCar(0x2288e6); ramp.add(baseCar);
             const angledCar = buildStaticCar(0xe68822);
-            angledCar.position.set(0, 1.6, -1.0); // Rest the angled car's wheels on the base car's roof
-            angledCar.rotation.x = Math.PI / 6; 
-            ramp.add(angledCar);
-            
+            angledCar.position.set(0, 1.6, -1.0); angledCar.rotation.x = Math.PI / 6; ramp.add(angledCar);
             ramp.userData = { speed: 0, type: 'ramp' };
             return ramp;
         }
@@ -789,84 +1084,77 @@
         }
 
         function createGasCan() {
-            const gasCan = new THREE.Group();
+            const gc = new THREE.Group();
             const body = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.0, 0.6), new THREE.MeshLambertMaterial({ color: 0xff0000 }));
-            body.position.y = 0.5; body.castShadow = true; gasCan.add(body);
+            body.position.y = 0.5; body.castShadow = true; gc.add(body);
             const handle = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.2, 0.2), new THREE.MeshLambertMaterial({ color: 0xffffff }));
-            handle.position.set(-0.2, 1.1, 0); gasCan.add(handle);
+            handle.position.set(-0.2, 1.1, 0); gc.add(handle);
             const spout = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.4, 0.2), new THREE.MeshLambertMaterial({ color: 0xaaaaaa }));
-            spout.position.set(0.3, 1.1, 0); spout.rotation.z = -Math.PI/6; gasCan.add(spout);
-            gasCan.userData = { speed: 0, type: 'gas' };
-            return gasCan;
+            spout.position.set(0.3, 1.1, 0); spout.rotation.z = -Math.PI/6; gc.add(spout);
+            gc.userData = { speed: 0, type: 'gas' };
+            return gc;
         }
 
         function createPothole() {
-            const pothole = new THREE.Group();
+            const ph = new THREE.Group();
             const holeGeo = new THREE.CylinderGeometry(1.4, 1.4, 0.05, 16);
             const holeMat = new THREE.MeshBasicMaterial({ color: 0x111111 });
             const holeMesh = new THREE.Mesh(holeGeo, holeMat);
-            holeMesh.position.y = 0.03; 
-            pothole.add(holeMesh);
-            pothole.userData = { speed: 0, type: 'pothole' };
-            return pothole;
+            holeMesh.position.y = 0.03;
+            ph.add(holeMesh);
+            ph.userData = { speed: 0, type: 'pothole' };
+            return ph;
         }
 
         function createAutoShop() {
             const shop = new THREE.Group();
-            
-            // Driveway pad (longer to prevent crashing when entering/exiting)
             const pad = new THREE.Mesh(new THREE.BoxGeometry(20, 0.05, 80), new THREE.MeshLambertMaterial({ color: 0x444444 }));
-            pad.position.set(0, 0.02, 0);
-            pad.receiveShadow = true;
-            shop.add(pad);
-            
-            // Drive-through Canopy
+            pad.position.set(0, 0.02, 0); pad.receiveShadow = true; shop.add(pad);
             const canopy = new THREE.Mesh(new THREE.BoxGeometry(18, 1.5, 20), new THREE.MeshLambertMaterial({ color: 0xaa2222 }));
-            canopy.position.set(0, 8, 0);
-            canopy.castShadow = true;
-            shop.add(canopy);
-
-            // Left Building/Wall
+            canopy.position.set(0, 8, 0); canopy.castShadow = true; shop.add(canopy);
             const leftWall = new THREE.Mesh(new THREE.BoxGeometry(2, 8, 15), new THREE.MeshLambertMaterial({ color: 0x888888 }));
-            leftWall.position.set(-8, 4, 0);
-            leftWall.castShadow = true;
-            shop.add(leftWall);
-
-            // Right Building/Wall
+            leftWall.position.set(-8, 4, 0); leftWall.castShadow = true; shop.add(leftWall);
             const rightWall = new THREE.Mesh(new THREE.BoxGeometry(2, 8, 15), new THREE.MeshLambertMaterial({ color: 0x888888 }));
-            rightWall.position.set(8, 4, 0);
-            rightWall.castShadow = true;
-            shop.add(rightWall);
-
-            // Glowing Green Cross (The actual heal pickup)
-            const crossGroup = new THREE.Group();
-            crossGroup.name = 'healCross';
+            rightWall.position.set(8, 4, 0); rightWall.castShadow = true; shop.add(rightWall);
+            const crossGroup = new THREE.Group(); crossGroup.name = 'healCross';
             const crossMat = new THREE.MeshBasicMaterial({ color: 0x33ff33 });
-            const crossVert = new THREE.Mesh(new THREE.BoxGeometry(0.6, 2.0, 0.6), crossMat);
-            const crossHoriz = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.6, 0.6), crossMat);
-            crossGroup.add(crossVert);
-            crossGroup.add(crossHoriz);
-            crossGroup.position.set(0, 1.5, 0);
-            shop.add(crossGroup);
-
-            // Cones to guide the pit stop lane
+            crossGroup.add(new THREE.Mesh(new THREE.BoxGeometry(0.6, 2.0, 0.6), crossMat));
+            crossGroup.add(new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.6, 0.6), crossMat));
+            crossGroup.position.set(0, 1.5, 0); shop.add(crossGroup);
             const coneGeo = new THREE.ConeGeometry(0.3, 0.8, 8);
             const coneMat = new THREE.MeshLambertMaterial({ color: 0xff8800 });
-            for(let i = 0; i < 6; i++) {
-                const cone1 = new THREE.Mesh(coneGeo, coneMat);
-                cone1.position.set(-4, 0.4, -30 + (i * 12));
-                shop.add(cone1);
-                
-                const cone2 = new THREE.Mesh(coneGeo, coneMat);
-                cone2.position.set(4, 0.4, -30 + (i * 12));
-                shop.add(cone2);
+            for (let i = 0; i < 6; i++) {
+                const c1 = new THREE.Mesh(coneGeo, coneMat); c1.position.set(-4, 0.4, -30 + i * 12); shop.add(c1);
+                const c2 = new THREE.Mesh(coneGeo, coneMat); c2.position.set( 4, 0.4, -30 + i * 12); shop.add(c2);
             }
-            
             shop.userData = { speed: 0, type: 'autoshop' };
             return shop;
         }
 
-        // --- Endless Mode Initialization ---
+        // ── NEW: Coin Pickup ──
+        function createCoinPickup() {
+            const coinGroup = new THREE.Group();
+            // Gold coin — flat cylinder
+            const coinGeo = new THREE.CylinderGeometry(0.6, 0.6, 0.2, 12);
+            const coinMat = new THREE.MeshLambertMaterial({ color: 0xffcc00, emissive: 0x886600 });
+            const coinMesh = new THREE.Mesh(coinGeo, coinMat);
+            coinMesh.position.y = 0.8;
+            coinMesh.rotation.x = Math.PI / 2; // face the player
+            coinGroup.add(coinMesh);
+            // Inner star ring
+            const innerGeo = new THREE.CylinderGeometry(0.3, 0.3, 0.25, 6);
+            const innerMat = new THREE.MeshBasicMaterial({ color: 0xfff000 });
+            const innerMesh = new THREE.Mesh(innerGeo, innerMat);
+            innerMesh.position.y = 0.8;
+            innerMesh.rotation.x = Math.PI / 2;
+            coinGroup.add(innerMesh);
+            coinGroup.userData = { speed: 0, type: 'coin', rotSpeed: 0.06 + Math.random() * 0.04 };
+            return coinGroup;
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  ENDLESS MODE
+        // ═══════════════════════════════════════════════════════════
         let endlessGround, endlessRoad;
         let endlessProps = [];
         let endlessObstacles = [];
@@ -889,8 +1177,8 @@
                 endlessGroup.add(endlessRoad);
             }
 
-            endlessProps.forEach(prop => endlessGroup.remove(prop));
-            endlessObstacles.forEach(obs => endlessGroup.remove(obs));
+            endlessProps.forEach(p => endlessGroup.remove(p));
+            endlessObstacles.forEach(o => endlessGroup.remove(o));
             endlessProps = [];
             endlessObstacles = [];
 
@@ -901,55 +1189,58 @@
                 endlessGroup.add(prop); endlessProps.push(prop);
             }
 
-            let numObstacles = 35; 
-            if (difficulty === 'easy') numObstacles = 15; 
-            if (difficulty === 'hard') numObstacles = 60; 
+            let numObstacles = 35;
+            if (difficulty === 'easy') numObstacles = 15;
+            if (difficulty === 'hard') numObstacles = 60;
+
+            // Always spawn some coin pickups
+            const numCoins = difficulty === 'easy' ? 12 : difficulty === 'hard' ? 20 : 16;
+            for (let i = 0; i < numCoins; i++) {
+                const coin = createCoinPickup();
+                coin.position.set((Math.random() - 0.5) * (ROAD_WIDTH - 6), 0, -Math.random() * CHUNK_SIZE * 1.5 - 30);
+                endlessGroup.add(coin); endlessObstacles.push(coin);
+            }
 
             for (let i = 0; i < numObstacles; i++) {
                 let obs;
                 const rand = Math.random();
-                
-                // 2% chance for an auto shop! Very rare.
-                if (rand < 0.02) { obs = createAutoShop(); }
-                else if (rand < 0.07) { obs = createCarRamp(); }
-                else if (rand < 0.14) { obs = createCarCrash(); }
-                else if (rand < 0.22) { obs = createPinkTrash(); }
-                else if (rand < 0.30) { obs = createGasCan(); } 
-                else if (rand < 0.37) { obs = createPothole(); } 
-                else if (rand < 0.47) { obs = createTrash(); }
+                if (rand < 0.02)      obs = createAutoShop();
+                else if (rand < 0.07) obs = createCarRamp();
+                else if (rand < 0.14) obs = createCarCrash();
+                else if (rand < 0.22) obs = createPinkTrash();
+                else if (rand < 0.30) obs = createGasCan();
+                else if (rand < 0.37) obs = createPothole();
+                else if (rand < 0.47) obs = createTrash();
                 else {
                     let ragerChance = 0.15;
                     if (difficulty === 'easy') ragerChance = 0;
                     if (difficulty === 'hard') ragerChance = 0.40;
-                    const isRager = Math.random() < ragerChance;
-                    obs = isRager ? createRoadRager() : createEnemyCar();
+                    obs = Math.random() < ragerChance ? createRoadRager() : createEnemyCar();
                 }
-                
+
                 if (obs.userData.type === 'autoshop') {
-                    // Spawn pit stop exactly on the edge of the road
                     obs.position.set((Math.random() > 0.5 ? 1 : -1) * (ROAD_WIDTH / 2 + 5), 0, -Math.random() * CHUNK_SIZE * 1.5 - 50);
                 } else {
                     obs.position.set((Math.random() - 0.5) * (ROAD_WIDTH - 6), 0, -Math.random() * CHUNK_SIZE * 1.5 - 50);
                 }
-                
+
                 if (obs.userData.type === 'car' || obs.userData.type === 'rager') {
-                    if (difficulty === 'easy') obs.userData.speed -= 0.02; 
-                    if (difficulty === 'hard') obs.userData.speed += 0.05; 
+                    if (difficulty === 'easy') obs.userData.speed -= 0.02;
+                    if (difficulty === 'hard') obs.userData.speed += 0.05;
                 }
 
                 endlessGroup.add(obs); endlessObstacles.push(obs);
             }
         }
 
-
-        // --- Custom Map Builder Logic ---
-        
+        // ═══════════════════════════════════════════════════════════
+        //  MAP BUILDER
+        // ═══════════════════════════════════════════════════════════
         let mapData = Array(GRID_ROWS).fill().map(() => Array(GRID_COLS).fill('grass'));
-        
         const centerCol = Math.floor(GRID_COLS / 2);
-        for(let r=0; r<GRID_ROWS; r++) {
+        for (let r = 0; r < GRID_ROWS; r++) {
             mapData[r][centerCol - 1] = 'road';
-            mapData[r][centerCol] = 'road';
+            mapData[r][centerCol]     = 'road';
             mapData[r][centerCol + 1] = 'road';
         }
 
@@ -958,7 +1249,7 @@
 
         const gridDOM = document.getElementById('builder-grid');
         gridDOM.style.gridTemplateColumns = `repeat(${GRID_COLS}, 12px)`;
-        gridDOM.style.gridTemplateRows = `repeat(${GRID_ROWS}, 12px)`;
+        gridDOM.style.gridTemplateRows    = `repeat(${GRID_ROWS}, 12px)`;
 
         function renderBuilderGrid() {
             gridDOM.innerHTML = '';
@@ -967,9 +1258,7 @@
                     const cell = document.createElement('div');
                     cell.className = `grid-cell cell-${mapData[r][c]}`;
                     cell.dataset.row = r; cell.dataset.col = c;
-                    
-                    if(r === GRID_ROWS - 1) cell.classList.add('finish-line-row');
-                    
+                    if (r === GRID_ROWS - 1) cell.classList.add('finish-line-row');
                     gridDOM.appendChild(cell);
                 }
             }
@@ -977,7 +1266,7 @@
         renderBuilderGrid();
 
         document.querySelectorAll('.tool-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => {
+            btn.addEventListener('click', () => {
                 document.querySelectorAll('.tool-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 currentTool = btn.dataset.tool;
@@ -993,25 +1282,20 @@
             if (!target.classList.contains('grid-cell')) return;
             const r = parseInt(target.dataset.row);
             const c = parseInt(target.dataset.col);
-            
             mapData[r][c] = currentTool;
             target.className = `grid-cell cell-${currentTool}`;
-            if(r === GRID_ROWS - 1) target.classList.add('finish-line-row');
+            if (r === GRID_ROWS - 1) target.classList.add('finish-line-row');
         }
 
         function buildCustom3DWorld() {
-            while(customGroup.children.length > 0){ 
-                customGroup.remove(customGroup.children[0]); 
-            }
+            while (customGroup.children.length > 0) customGroup.remove(customGroup.children[0]);
             customObstacles = [];
 
             const bgGeo = new THREE.PlaneGeometry(GRID_COLS * CELL_SIZE + 200, GRID_ROWS * CELL_SIZE + 200);
             grassTexture.repeat.set(50, 50);
             const bgMesh = new THREE.Mesh(bgGeo, new THREE.MeshLambertMaterial({ map: grassTexture }));
-            bgMesh.rotation.x = -Math.PI / 2;
-            bgMesh.position.y = -0.01; 
-            bgMesh.position.z = - (GRID_ROWS * CELL_SIZE) / 2; 
-            bgMesh.receiveShadow = true;
+            bgMesh.rotation.x = -Math.PI / 2; bgMesh.position.y = -0.01;
+            bgMesh.position.z = -(GRID_ROWS * CELL_SIZE) / 2; bgMesh.receiveShadow = true;
             customGroup.add(bgMesh);
 
             const roadGeo = new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE);
@@ -1020,66 +1304,56 @@
             for (let r = 0; r < GRID_ROWS; r++) {
                 for (let c = 0; c < GRID_COLS; c++) {
                     const type = mapData[r][c];
-                    
                     const posX = (c - Math.floor(GRID_COLS / 2)) * CELL_SIZE;
                     const posZ = -r * CELL_SIZE;
 
-                    if (['road', 'car', 'rager', 'trash', 'pinktrash', 'crash', 'ramp', 'gas', 'pothole', 'autoshop'].includes(type)) {
+                    if (['road','car','rager','trash','pinktrash','crash','ramp','gas','pothole','autoshop','coin'].includes(type)) {
                         const tile = new THREE.Mesh(roadGeo, roadMat);
-                        tile.rotation.x = -Math.PI / 2;
-                        tile.position.set(posX, 0.01, posZ);
-                        tile.receiveShadow = true;
-                        customGroup.add(tile);
+                        tile.rotation.x = -Math.PI / 2; tile.position.set(posX, 0.01, posZ);
+                        tile.receiveShadow = true; customGroup.add(tile);
                     }
 
                     let obj = null;
-                    if (type === 'tree') obj = createTree();
-                    else if (type === 'rock') obj = createRock();
-                    else if (type === 'trash') { obj = createTrash(); customObstacles.push(obj); }
-                    else if (type === 'pinktrash') { obj = createPinkTrash(); customObstacles.push(obj); }
-                    else if (type === 'car') { obj = createEnemyCar(); customObstacles.push(obj); }
-                    else if (type === 'rager') { obj = createRoadRager(); customObstacles.push(obj); }
-                    else if (type === 'crash') { obj = createCarCrash(); customObstacles.push(obj); }
-                    else if (type === 'ramp') { obj = createCarRamp(); customObstacles.push(obj); }
-                    else if (type === 'gas') { obj = createGasCan(); customObstacles.push(obj); }
-                    else if (type === 'pothole') { obj = createPothole(); customObstacles.push(obj); }
-                    else if (type === 'autoshop') { obj = createAutoShop(); customObstacles.push(obj); }
+                    if      (type === 'tree')     obj = createTree();
+                    else if (type === 'rock')     obj = createRock();
+                    else if (type === 'trash')    { obj = createTrash();     customObstacles.push(obj); }
+                    else if (type === 'pinktrash'){ obj = createPinkTrash(); customObstacles.push(obj); }
+                    else if (type === 'car')      { obj = createEnemyCar();  customObstacles.push(obj); }
+                    else if (type === 'rager')    { obj = createRoadRager(); customObstacles.push(obj); }
+                    else if (type === 'crash')    { obj = createCarCrash();  customObstacles.push(obj); }
+                    else if (type === 'ramp')     { obj = createCarRamp();   customObstacles.push(obj); }
+                    else if (type === 'gas')      { obj = createGasCan();    customObstacles.push(obj); }
+                    else if (type === 'pothole')  { obj = createPothole();   customObstacles.push(obj); }
+                    else if (type === 'autoshop') { obj = createAutoShop();  customObstacles.push(obj); }
+                    else if (type === 'coin')     { obj = createCoinPickup();customObstacles.push(obj); }
 
-                    if (obj) {
-                        obj.position.set(posX, 0, posZ);
-                        customGroup.add(obj);
-                    }
+                    if (obj) { obj.position.set(posX, 0, posZ); customGroup.add(obj); }
                 }
             }
         }
 
-        // --- Upgrades / progression Flow ---
-        
+        // ═══════════════════════════════════════════════════════════
+        //  UPGRADES / PROGRESSION
+        // ═══════════════════════════════════════════════════════════
         function getTractionCost() { return (tractionLevel + 1) * 100; }
-        function getArmorCost() { return (armorLevel + 1) * 100; }
+        function getArmorCost()    { return (armorLevel + 1) * 100;    }
         const NITRO_COST = 50;
 
         function updateUpgradesUI() {
             document.getElementById('coins-display').innerText = `Coins: ${totalCoins}`;
-            document.getElementById('menu-coins').innerText = `Total Coins: ${totalCoins}`;
-            
+            document.getElementById('menu-coins').innerText    = `Total Coins: ${totalCoins}`;
+
             const tracCost = getTractionCost();
             document.getElementById('traction-lvl').innerText = `Lvl ${tractionLevel}/${MAX_UPGRADE_LEVEL}`;
             const btnTrac = document.getElementById('btn-upg-traction');
-            if (tractionLevel >= MAX_UPGRADE_LEVEL) {
-                btnTrac.innerText = "MAXED"; btnTrac.disabled = true;
-            } else {
-                btnTrac.innerText = `Buy (${tracCost}c)`; btnTrac.disabled = totalCoins < tracCost;
-            }
+            if (tractionLevel >= MAX_UPGRADE_LEVEL) { btnTrac.innerText = "MAXED"; btnTrac.disabled = true; }
+            else { btnTrac.innerText = `Buy (${tracCost}c)`; btnTrac.disabled = totalCoins < tracCost; }
 
             const armorCost = getArmorCost();
             document.getElementById('armor-lvl').innerText = `Lvl ${armorLevel}/${MAX_UPGRADE_LEVEL}`;
             const btnArmor = document.getElementById('btn-upg-armor');
-            if (armorLevel >= MAX_UPGRADE_LEVEL) {
-                btnArmor.innerText = "MAXED"; btnArmor.disabled = true;
-            } else {
-                btnArmor.innerText = `Buy (${armorCost}c)`; btnArmor.disabled = totalCoins < armorCost;
-            }
+            if (armorLevel >= MAX_UPGRADE_LEVEL) { btnArmor.innerText = "MAXED"; btnArmor.disabled = true; }
+            else { btnArmor.innerText = `Buy (${armorCost}c)`; btnArmor.disabled = totalCoins < armorCost; }
 
             document.getElementById('nitro-qty').innerText = `Owned: ${nitroCount}`;
             const btnNitro = document.getElementById('btn-buy-nitro');
@@ -1097,9 +1371,7 @@
             }
         }
         function buyNitro() {
-            if (totalCoins >= NITRO_COST) {
-                totalCoins -= NITRO_COST; nitroCount++; updateUpgradesUI();
-            }
+            if (totalCoins >= NITRO_COST) { totalCoins -= NITRO_COST; nitroCount++; updateUpgradesUI(); }
         }
 
         function openUpgrades() {
@@ -1112,19 +1384,15 @@
             document.getElementById('overlay').style.display = 'flex';
         }
 
-        // --- Game Flow Control ---
-        
+        // ═══════════════════════════════════════════════════════════
+        //  GAME FLOW
+        // ═══════════════════════════════════════════════════════════
         function openBuilder() {
             gameMode = 'builder';
             document.getElementById('overlay').style.display = 'none';
             document.getElementById('builder-ui').style.display = 'flex';
-            
             initAudio();
-            if (audioCtx) {
-                engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); 
-                nextNoteTime = audioCtx.currentTime + 0.1;
-                noteIndex = 0;
-            }
+            if (audioCtx) { engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); nextNoteTime = audioCtx.currentTime + 0.1; noteIndex = 0; }
         }
 
         function closeBuilder() {
@@ -1135,30 +1403,34 @@
         function showMainMenu(title = "PIXEL PANIC", subtitle = "", isCrash = false) {
             isGameRunning = false;
             gameMode = 'menu';
-            invertEndTime = 0; 
-            boostEndTime = 0;
-            slowEndTime = 0;
-            cheatCodeInput = ""; // Reset cheat code sequence on menu load
-            document.body.style.filter = 'none'; 
+            invertEndTime = 0; boostEndTime = 0; slowEndTime = 0;
+            cheatCodeInput = "";
+            isDrifting = false;
+            comboCount = 0;
+            document.getElementById('drift-text').style.display = 'none';
+            document.getElementById('combo-text').style.display = 'none';
+            document.getElementById('combo-mult').style.display = 'none';
+            document.getElementById('checkpoint-display').style.display = 'none';
+            document.body.style.filter = 'none';
             if (audioCtx && engineGain) engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
-            
+
             document.getElementById('ui').style.display = 'none';
             document.getElementById('menu-coins').innerText = `Total Coins: ${totalCoins}`;
-            
+
             const overlay = document.getElementById('overlay');
             overlay.style.display = 'flex';
             overlay.querySelector('h1').innerText = title;
             overlay.querySelector('h1').style.color = isCrash ? '#ff0000' : '#ffcc00';
-            
+
             const sub = document.getElementById('menu-subtitle');
-            if(subtitle) { sub.innerHTML = subtitle; sub.style.display = 'block'; }
+            if (subtitle) { sub.innerHTML = subtitle; sub.style.display = 'block'; }
             else { sub.style.display = 'none'; }
         }
 
         function exitToMenu() {
-            let earned = Math.floor(distanceTraveled / 10);
-            totalCoins += earned;
-            showMainMenu("PIXEL PANIC", `<span style="color:#00ffff;">Distance Bonus: +${earned} Coins</span>`);
+            // Award any remaining drift coins
+            if (isDrifting && driftCoins > 0) awardCoins(driftCoins, 'drift');
+            showMainMenu("PIXEL PANIC", `<span style="color:#00ffff;">Session: +${sessionCoins} Coins &nbsp;|&nbsp; Best Combo: x${comboCount}</span>`);
         }
 
         function startGame(mode, difficulty = 'normal') {
@@ -1166,76 +1438,70 @@
             document.getElementById('overlay').style.display = 'none';
             document.getElementById('builder-ui').style.display = 'none';
             document.getElementById('ui').style.display = 'flex';
-            
+
             let armorBonus = armorLevel * 20;
-
             if (mode === 'endless') {
-                if (difficulty === 'easy') { maxSpeed = 0.35; health = 100 + armorBonus; }
-                else if (difficulty === 'hard') { maxSpeed = 0.58; health = 200 + armorBonus; }
-                else { maxSpeed = 0.45; health = 150 + armorBonus; }
+                if (difficulty === 'easy')   { maxSpeed = 0.35; health = 100 + armorBonus; }
+                else if (difficulty === 'hard'){ maxSpeed = 0.58; health = 200 + armorBonus; }
+                else                          { maxSpeed = 0.45; health = 150 + armorBonus; }
             } else {
-                maxSpeed = 0.45; 
-                health = 100 + armorBonus;    
+                maxSpeed = 0.45; health = 100 + armorBonus;
             }
+            maxHealth = health;
 
-            maxHealth = health; // Set the health cap for this run
+            speed = 0; angle = 0; verticalVelocity = 0;
+            distanceTraveled = 0; sessionCoins = 0;
+            invertEndTime = 0; boostEndTime = 0; slowEndTime = 0;
 
-            speed = 0; 
-            angle = 0;
-            verticalVelocity = 0; 
-            distanceTraveled = 0; // Reset session distance
-            invertEndTime = 0; 
-            boostEndTime = 0;
-            slowEndTime = 0;
-            document.body.style.filter = 'none'; 
+            // Reset new systems
+            comboCount = 0; comboTimer = 0;
+            isDrifting = false; driftCoins = 0; driftCoinAccum = 0; driftHoldCounter = 0;
+            nextCheckpointAt = CHECKPOINT_INTERVAL; checkpointCount = 0;
+
+            document.body.style.filter = 'none';
             car.position.set(0, 0, 0);
-            car.rotation.y = 0; 
+            car.rotation.y = 0;
             carBodyGroup.rotation.z = 0;
-            
-            document.getElementById('speedometer').innerText = "0 MPH";
-            document.getElementById('health-bar').innerText = "Health: " + health;
-            document.getElementById('nitro-hud').innerText = `Nitro: ${nitroCount} [SHIFT]`;
+
+            document.getElementById('speedometer').innerText    = "0 MPH";
+            document.getElementById('health-bar').innerText     = "Health: " + health;
+            document.getElementById('nitro-hud').innerText      = `Nitro: ${nitroCount} [SHIFT]`;
+            document.getElementById('session-coins-hud').innerText = 'Coins: 0';
+            document.getElementById('checkpoint-hud').innerText = mode === 'endless' ? `Next CP: ${CHECKPOINT_INTERVAL}m` : '';
+            document.getElementById('drift-text').style.display = 'none';
+            updateComboUI();
 
             if (mode === 'endless') {
-                endlessGroup.visible = true;
-                customGroup.visible = false;
+                endlessGroup.visible = true; customGroup.visible = false;
                 initEndlessMode(difficulty);
             } else if (mode === 'custom') {
-                endlessGroup.visible = false;
-                customGroup.visible = true;
+                endlessGroup.visible = false; customGroup.visible = true;
                 buildCustom3DWorld();
             }
 
             initAudio();
             if (audioCtx) {
-                engineGain.gain.setTargetAtTime(0.015, audioCtx.currentTime, 0.1); 
-                nextNoteTime = audioCtx.currentTime + 0.1;
-                noteIndex = 0;
+                engineGain.gain.setTargetAtTime(0.015, audioCtx.currentTime, 0.1);
+                nextNoteTime = audioCtx.currentTime + 0.1; noteIndex = 0;
             }
-
             isGameRunning = true;
         }
 
         function crashGame(reason) {
-            if (audioCtx) engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); 
+            if (isDrifting && driftCoins > 0) awardCoins(driftCoins, 'drift');
+            if (audioCtx) engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
             playCrashSound();
             let subtitle = 'You hit an obstacle!';
-            if (reason === 'grass') {
-                subtitle = 'Your car got stuck in the thick grass!';
-            } else if (reason === 'damage') {
-                subtitle = 'Your car took too much damage!';
-            }
-
-            let earned = Math.floor(distanceTraveled / 10);
-            totalCoins += earned;
-            subtitle += `<br><span style="color:#00ffff; font-weight:bold;">Distance Bonus: +${earned} Coins</span>`;
-
+            if (reason === 'grass')  subtitle = 'Your car got stuck in the thick grass!';
+            if (reason === 'damage') subtitle = 'Your car took too much damage!';
+            subtitle += `<br><span style="color:#00ffff; font-weight:bold;">Session Coins: +${sessionCoins} &nbsp;|&nbsp; Best Combo: x${comboCount}</span>`;
             showMainMenu('CRASHED!', subtitle, true);
         }
 
         function takeDamage(amount) {
             health -= amount;
-            speed *= 0.5; 
+            speed  *= 0.5;
+            resetCombo(); // Taking damage breaks your combo!
             if (health <= 0) {
                 health = 0;
                 document.getElementById('health-bar').innerText = "Health: 0";
@@ -1247,37 +1513,184 @@
         }
 
         function healDamage(amount) {
-            health += amount;
+            health = Math.min(health + amount, maxHealth);
             document.getElementById('health-bar').innerText = "Health: " + health;
             playHealSound();
         }
 
         function winGame() {
-            if (audioCtx) engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1); 
+            if (isDrifting && driftCoins > 0) awardCoins(driftCoins, 'drift');
+            if (audioCtx) engineGain.gain.setTargetAtTime(0, audioCtx.currentTime, 0.1);
             playWinSound();
-
-            let earned = Math.floor(distanceTraveled / 10);
-            totalCoins += earned;
-            let subtitle = `You finished your custom track!<br><span style="color:#00ffff; font-weight:bold;">Distance Bonus: +${earned} Coins</span>`;
-
+            let subtitle = `You finished your custom track!<br><span style="color:#00ffff; font-weight:bold;">Session Coins: +${sessionCoins}</span>`;
             showMainMenu('YOU WIN!', subtitle, false);
         }
 
-        // --- Builder Keybind Map ---
+        // ═══════════════════════════════════════════════════════════
+        //  COLLISION HANDLING
+        // ═══════════════════════════════════════════════════════════
+        function handleObstacleCollision(obs) {
+            const isFlying     = car.position.y > 1.2;
+            const isInvincible = Date.now() < boostEndTime;
+            const isInverted   = Date.now() < invertEndTime;
+
+            let hitX = 2.2, hitZ = 3.0;
+            if (obs.userData.type === 'autoshop') { hitX = 5.0; hitZ = 10.0; }
+            if (obs.userData.type === 'coin')     { hitX = 1.8; hitZ = 1.8; }
+
+            if (!obs.userData.hit &&
+                Math.abs(car.position.x - obs.position.x) < hitX &&
+                Math.abs(car.position.z - obs.position.z) < hitZ) {
+
+                if (isFlying && obs.userData.type !== 'ramp' && obs.userData.type !== 'coin') return;
+
+                obs.userData.hit = true;
+
+                if (obs.userData.type === 'coin') {
+                    // ── Coin Pickup ──
+                    awardCoins(5, 'coin');
+                    incrementCombo();
+                    playCoinSound();
+                    obs.visible = false;
+
+                } else if (obs.userData.type === 'gas') {
+                    boostEndTime = Date.now() + 2000;
+                    playBoostSound();
+                    obs.visible = false;
+
+                } else if (obs.userData.type === 'ramp') {
+                    verticalVelocity = 0.40;
+                    playHealSound();
+
+                } else if (obs.userData.type === 'pothole') {
+                    if (!isInvincible) { slowEndTime = Date.now() + 4000; playHitSound(); }
+
+                } else if (obs.userData.type === 'autoshop') {
+                    health *= 2;
+                    if (health > maxHealth) health = maxHealth;
+                    document.getElementById('health-bar').innerText = "Health: " + health;
+                    playHealSound();
+                    const cross = obs.getObjectByName('healCross');
+                    if (cross) cross.visible = false;
+
+                } else {
+                    if (isInvincible) {
+                        obs.visible = false;
+                        playHitSound();
+                        incrementCombo(); // Smashing through while invincible counts!
+                    } else {
+                        if (obs.userData.type === 'crash') {
+                            crashGame('obstacle');
+                        } else {
+                            obs.visible = false;
+                            if (obs.userData.type === 'pinktrash') {
+                                invertEndTime = Date.now() + 8000;
+                                playPowerupSound();
+                            } else {
+                                let amount = obs.userData.type === 'trash' ? 7 : 10;
+                                if (isInverted) {
+                                    healDamage(amount);
+                                    incrementCombo(); // Inverted hits count as dodges!
+                                } else {
+                                    if (ragerImmunity && obs.userData.type === 'rager') {
+                                        playHitSound();
+                                    } else {
+                                        takeDamage(amount);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            } else if (!obs.userData.hit) {
+                // Obstacle was nearby but not hit — count it as a "dodge" once it's safely passed
+                if (obs.userData.type !== 'coin' &&
+                    obs.userData.type !== 'gas'  &&
+                    obs.userData.type !== 'autoshop' &&
+                    obs.userData.type !== 'ramp' &&
+                    obs.userData.type !== 'pothole' &&
+                    car.position.z < obs.position.z - 6 &&
+                    !obs.userData.dodgeCounted &&
+                    Math.abs(car.position.x - obs.position.x) < (ROAD_WIDTH / 2)) {
+                    obs.userData.dodgeCounted = true;
+                    incrementCombo();
+                }
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  DEBUG SYSTEM
+        // ═══════════════════════════════════════════════════════════
+        let debugActive = false;
+        let debugFrameCount = 0;
+        let debugLastTime = performance.now();
+        let debugFPS = 0;
+        let debugCollisionBoxes = [];
+        let debugCarBox = null;
+
+        const debugOverlay = document.getElementById('debug-overlay');
+
+        function toggleDebug() {
+            debugActive = !debugActive;
+            debugOverlay.style.display = debugActive ? 'block' : 'none';
+            if (debugActive) showCollisionBoxes(); else hideCollisionBoxes();
+        }
+
+        function createCollisionHelper(sx, sy, sz, color) {
+            const geo   = new THREE.BoxGeometry(sx, sy, sz);
+            const edges = new THREE.EdgesGeometry(geo);
+            const mat   = new THREE.LineBasicMaterial({ color });
+            return new THREE.LineSegments(edges, mat);
+        }
+
+        function showCollisionBoxes() {
+            hideCollisionBoxes();
+            debugCarBox = createCollisionHelper(2.2*2, 2, 3.0*2, 0x00ff00);
+            debugCarBox.position.y = 1; car.add(debugCarBox);
+            const obstacles = gameMode === 'endless' ? endlessObstacles : (gameMode === 'custom' ? customObstacles : []);
+            obstacles.forEach(obs => {
+                if (!obs.visible) return;
+                let hx = 2.2, hz = 3.0;
+                if (obs.userData.type === 'autoshop') { hx = 5.0; hz = 10.0; }
+                if (obs.userData.type === 'coin')     { hx = 1.8; hz = 1.8;  }
+                const helper = createCollisionHelper(hx*2, 2, hz*2, obs.userData.type === 'coin' ? 0xffcc00 : 0xff0000);
+                helper.position.y = 1; obs.add(helper); debugCollisionBoxes.push(helper);
+            });
+            document.getElementById('debug-collisions').textContent = 'Boxes: ON (' + (obstacles.length + 1) + ')';
+        }
+
+        function hideCollisionBoxes() {
+            if (debugCarBox) { car.remove(debugCarBox); debugCarBox = null; }
+            debugCollisionBoxes.forEach(h => { if (h.parent) h.parent.remove(h); });
+            debugCollisionBoxes = [];
+            document.getElementById('debug-collisions').textContent = 'Boxes: OFF';
+        }
+
+        function updateDebugInfo() {
+            if (!debugActive) return;
+            debugFrameCount++;
+            const now = performance.now();
+            const elapsed = now - debugLastTime;
+            if (elapsed >= 500) {
+                debugFPS = Math.round((debugFrameCount / elapsed) * 1000);
+                debugFrameCount = 0; debugLastTime = now;
+            }
+            document.getElementById('debug-fps').textContent       = 'FPS: ' + debugFPS;
+            document.getElementById('debug-speed').textContent     = 'Speed: ' + speed.toFixed(4);
+            document.getElementById('debug-position').textContent  = `Pos: ${car.position.x.toFixed(1)}, ${car.position.y.toFixed(1)}, ${car.position.z.toFixed(1)}`;
+            document.getElementById('debug-angle').textContent     = 'Angle: ' + (angle * (180/Math.PI)).toFixed(1) + '°';
+            document.getElementById('debug-combo').textContent     = `Combo: x${comboCount} (${getComboMultiplier().toFixed(1)}x)`;
+            document.getElementById('debug-drift').textContent     = `Drifting: ${isDrifting ? 'YES +' + driftCoins + 'c' : 'No'}`;
+            if (isGameRunning && debugFrameCount === 0) showCollisionBoxes();
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        //  BUILDER KEYBINDS
+        // ═══════════════════════════════════════════════════════════
         const builderKeyMap = {
-            '1': 'road',
-            '2': 'grass',
-            '3': 'tree',
-            '4': 'rock',
-            '5': 'trash',
-            '6': 'pinktrash',
-            '7': 'car',
-            '8': 'rager',
-            '9': 'crash',
-            '0': 'ramp',
-            'q': 'gas',
-            'e': 'pothole',
-            'r': 'autoshop'
+            '1':'road','2':'grass','3':'tree','4':'rock','5':'trash',
+            '6':'pinktrash','7':'car','8':'rager','9':'crash','0':'ramp',
+            'q':'gas','e':'pothole','r':'autoshop','c':'coin'
         };
 
         function selectBuilderTool(toolName) {
@@ -1287,139 +1700,65 @@
             });
         }
 
-        // --- Input Handling ---
+        // ═══════════════════════════════════════════════════════════
+        //  INPUT HANDLING
+        // ═══════════════════════════════════════════════════════════
         window.addEventListener('keydown', (e) => {
-            // F3 Debug Toggle
-            if (e.key === 'F3') {
-                e.preventDefault();
-                toggleDebug();
-                return;
-            }
+            if (e.key === 'F3') { e.preventDefault(); toggleDebug(); return; }
 
-            // Builder mode keybinds
             if (gameMode === 'builder') {
                 const tool = builderKeyMap[e.key.toLowerCase()];
-                if (tool) {
-                    selectBuilderTool(tool);
-                    return;
-                }
+                if (tool) { selectBuilderTool(tool); return; }
             }
+
             if (e.key === 'a' || e.key === 'A') keys.a = true;
             if (e.key === 'd' || e.key === 'D') keys.d = true;
-            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.up = true;
-            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.down = true;
+            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp')    keys.up   = true;
+            if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown')  keys.down = true;
 
-            // Trigger Nitro Boost
-            if ((e.key === 'Shift') && isGameRunning) {
+            if (e.key === 'Shift' && isGameRunning) {
                 if (nitroCount > 0 && Date.now() > boostEndTime) {
                     nitroCount--;
-                    boostEndTime = Date.now() + 4000; // 4 seconds boost
+                    boostEndTime = Date.now() + 4000;
                     playBoostSound();
                     document.getElementById('nitro-hud').innerText = `Nitro: ${nitroCount} [SHIFT]`;
                 }
             }
 
-            // Secret Cheat Code Logic
+            // Cheat codes (menu only)
             if (gameMode === 'menu') {
-                if (e.key.length === 1) { // Ignore keys like 'Shift' so '_' works perfectly
-                    cheatCodeInput += e.key.toLowerCase();
-                }
-                
-                // Keep only the last 20 characters to match cheat code lengths
-                if (cheatCodeInput.length > 20) {
-                    cheatCodeInput = cheatCodeInput.slice(-20);
+                if (e.key.length === 1) cheatCodeInput += e.key.toLowerCase();
+                if (cheatCodeInput.length > 20) cheatCodeInput = cheatCodeInput.slice(-20);
+
+                const sub = document.getElementById('menu-subtitle');
+                function showCheatMsg(msg) {
+                    sub.innerHTML = msg; sub.style.display = 'block';
+                    initAudio(); playPowerupSound();
+                    cheatCodeInput = "";
+                    if (document.getElementById('upgrades-ui').style.display === 'flex') updateUpgradesUI();
+                    document.getElementById('menu-coins').innerText = `Total Coins: ${totalCoins}`;
                 }
 
                 if (cheatCodeInput.endsWith("amazing")) {
-                    // Apply Cheat
                     tractionLevel = Math.min(tractionLevel + 2, MAX_UPGRADE_LEVEL);
-                    armorLevel = Math.min(armorLevel + 2, MAX_UPGRADE_LEVEL);
-                    
-                    // Reset input so it can be used again
-                    cheatCodeInput = ""; 
-                    
-                    // Play a sound to indicate success
-                    initAudio();
-                    playPowerupSound();
-
-                    // Optional visual feedback on the menu
-                    const sub = document.getElementById('menu-subtitle');
-                    sub.innerHTML = '<span style="color:#00ff00; font-weight:bold;">CHEAT ACTIVATED: +2 Upgrades!</span>';
-                    sub.style.display = 'block';
-
-                    // Update UI if the upgrades garage is currently open
-                    if (document.getElementById('upgrades-ui').style.display === 'flex') {
-                        updateUpgradesUI();
-                    }
+                    armorLevel    = Math.min(armorLevel + 2, MAX_UPGRADE_LEVEL);
+                    showCheatMsg('<span style="color:#00ff00; font-weight:bold;">CHEAT ACTIVATED: +2 Upgrades!</span>');
                 }
-
                 if (cheatCodeInput.endsWith("nitro_me")) {
-                    // Apply Cheat
-                    nitroCount = 9999; // Effectively infinite
-                    
-                    // Reset input so it can be used again
-                    cheatCodeInput = ""; 
-                    
-                    // Play a sound to indicate success
-                    initAudio();
-                    playPowerupSound();
-
-                    // Optional visual feedback on the menu
-                    const sub = document.getElementById('menu-subtitle');
-                    sub.innerHTML = '<span style="color:#00ffff; font-weight:bold;">CHEAT ACTIVATED: Infinite Nitro!</span>';
-                    sub.style.display = 'block';
-
-                    // Update UI if the upgrades garage is currently open
-                    if (document.getElementById('upgrades-ui').style.display === 'flex') {
-                        updateUpgradesUI();
-                    }
-                }
-
-                if (cheatCodeInput.endsWith("wwssadad")) {
-                    // Apply Cheat
-                    ragerImmunity = true;
-                    carChassisMesh.material.color.setHex(0x8b0000); // Dark red paint job
-                    
-                    // Reset input so it can be used again
-                    cheatCodeInput = ""; 
-                    
-                    // Play a sound to indicate success
-                    initAudio();
-                    playPowerupSound();
-
-                    // Optional visual feedback on the menu
-                    const sub = document.getElementById('menu-subtitle');
-                    sub.innerHTML = '<span style="color:#8b0000; font-weight:bold;">CHEAT ACTIVATED: Rager Immunity & Red Paint!</span>';
-                    sub.style.display = 'block';
-                }
-
-                if (cheatCodeInput.endsWith("totaloverload") || cheatCodeInput.endsWith("total_overload")) {
-                    // Apply Cheat: Max everything and give tons of coins
-                    totalCoins += 99999;
-                    tractionLevel = MAX_UPGRADE_LEVEL;
-                    armorLevel = MAX_UPGRADE_LEVEL;
                     nitroCount = 9999;
-                    
-                    // Reset input so it can be used again
-                    cheatCodeInput = ""; 
-                    
-                    // Play sounds to indicate epic success
-                    initAudio();
-                    playPowerupSound();
+                    showCheatMsg('<span style="color:#00ffff; font-weight:bold;">CHEAT ACTIVATED: Infinite Nitro!</span>');
+                }
+                if (cheatCodeInput.endsWith("wwssadad")) {
+                    ragerImmunity = true;
+                    carChassisMesh.material.color.setHex(0x8b0000);
+                    showCheatMsg('<span style="color:#8b0000; font-weight:bold;">CHEAT ACTIVATED: Rager Immunity!</span>');
+                    cheatCodeInput = "";
+                }
+                if (cheatCodeInput.endsWith("totaloverload") || cheatCodeInput.endsWith("total_overload")) {
+                    totalCoins += 99999; tractionLevel = MAX_UPGRADE_LEVEL;
+                    armorLevel = MAX_UPGRADE_LEVEL; nitroCount = 9999;
                     setTimeout(playPowerupSound, 300);
-
-                    // Visual feedback on the menu
-                    const sub = document.getElementById('menu-subtitle');
-                    sub.innerHTML = '<span style="color:#ff00ff; font-weight:bold; text-shadow: 2px 2px 0 #000;">CHEAT ACTIVATED: TOTAL OVERLOAD!</span>';
-                    sub.style.display = 'block';
-                    
-                    // Update main menu coin counter
-                    document.getElementById('menu-coins').innerText = `Total Coins: ${totalCoins}`;
-
-                    // Update UI if the upgrades garage is currently open
-                    if (document.getElementById('upgrades-ui').style.display === 'flex') {
-                        updateUpgradesUI();
-                    }
+                    showCheatMsg('<span style="color:#ff00ff; font-weight:bold; text-shadow: 2px 2px 0 #000;">CHEAT ACTIVATED: TOTAL OVERLOAD!</span>');
                 }
             }
         });
@@ -1427,269 +1766,94 @@
         window.addEventListener('keyup', (e) => {
             if (e.key === 'a' || e.key === 'A') keys.a = false;
             if (e.key === 'd' || e.key === 'D') keys.d = false;
-            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp') keys.up = false;
+            if (e.key === 'w' || e.key === 'W' || e.key === 'ArrowUp')   keys.up   = false;
             if (e.key === 's' || e.key === 'S' || e.key === 'ArrowDown') keys.down = false;
         });
 
-        // --- Window Resizing ---
         function onWindowResize() {
-            const width = window.innerWidth / RESOLUTION_SCALE;
-            const height = window.innerHeight / RESOLUTION_SCALE;
-            camera.aspect = width / height;
+            const w = window.innerWidth / RESOLUTION_SCALE;
+            const h = window.innerHeight / RESOLUTION_SCALE;
+            camera.aspect = w / h;
             camera.updateProjectionMatrix();
-            renderer.setSize(width, height, false);
+            renderer.setSize(w, h, false);
         }
         window.addEventListener('resize', onWindowResize);
         onWindowResize();
 
-        // --- Common Collision Handling Logic ---
-        function handleObstacleCollision(obs) {
-            const isFlying = car.position.y > 1.2;
-            const isInvincible = Date.now() < boostEndTime;
-            const isInverted = Date.now() < invertEndTime;
-
-            let hitX = 2.2;
-            let hitZ = 3.0;
-            if (obs.userData.type === 'autoshop') {
-                hitX = 5.0; // Much wider collection radius so you don't miss the heal!
-                hitZ = 10.0;
-            }
-
-            if (!obs.userData.hit && Math.abs(car.position.x - obs.position.x) < hitX && Math.abs(car.position.z - obs.position.z) < hitZ) {
-                
-                if (isFlying && obs.userData.type !== 'ramp') return; 
-
-                obs.userData.hit = true;
-                
-                if (obs.userData.type === 'gas') {
-                    boostEndTime = Date.now() + 2000;
-                    playBoostSound();
-                    obs.visible = false;
-                } else if (obs.userData.type === 'ramp') {
-                    verticalVelocity = 0.40; 
-                    playHealSound(); 
-                } else if (obs.userData.type === 'pothole') {
-                    if (!isInvincible) {
-                        slowEndTime = Date.now() + 4000;
-                        playHitSound(); 
-                        // Do not make the pothole invisible - it's a permanent hole!
-                    }
-                } else if (obs.userData.type === 'autoshop') {
-                    // Double health but cap it at the starting maxHealth
-                    health *= 2;
-                    if (health > maxHealth) health = maxHealth;
-                    document.getElementById('health-bar').innerText = "Health: " + health;
-                    playHealSound();
-                    // Hide the green cross so player knows it's collected, but keep the building!
-                    const cross = obs.getObjectByName('healCross');
-                    if (cross) cross.visible = false;
-                } else {
-                    if (isInvincible) {
-                        // Smash right through!
-                        obs.visible = false;
-                        playHitSound();
-                    } else {
-                        if (obs.userData.type === 'crash') {
-                            // The car crash obstacle always crashes you
-                            crashGame('obstacle');
-                        } else {
-                            obs.visible = false; 
-                            
-                            if (obs.userData.type === 'pinktrash') {
-                                invertEndTime = Date.now() + 8000;
-                                playPowerupSound();
-                            } else {
-                                // Determine amount based on object type
-                                let amount = 10; // Default for cars/ragers
-                                if (obs.userData.type === 'trash') {
-                                    amount = 7;
-                                }
-
-                                if (isInverted) {
-                                    healDamage(amount);
-                                } else {
-                                    if (ragerImmunity && obs.userData.type === 'rager') {
-                                        playHitSound(); // Take no damage, but play the smash sound!
-                                    } else {
-                                        takeDamage(amount);
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-
-        // --- Debug System ---
-        let debugActive = false;
-        let debugFrameCount = 0;
-        let debugLastTime = performance.now();
-        let debugFPS = 0;
-        let debugCollisionBoxes = [];
-        let debugCarBox = null;
-
-        const debugOverlay = document.getElementById('debug-overlay');
-        const debugFPSEl = document.getElementById('debug-fps');
-        const debugSpeedEl = document.getElementById('debug-speed');
-        const debugPositionEl = document.getElementById('debug-position');
-        const debugAngleEl = document.getElementById('debug-angle');
-        const debugCollisionsEl = document.getElementById('debug-collisions');
-
-        function toggleDebug() {
-            debugActive = !debugActive;
-            debugOverlay.style.display = debugActive ? 'block' : 'none';
-            if (debugActive) {
-                showCollisionBoxes();
-            } else {
-                hideCollisionBoxes();
-            }
-        }
-
-        function createCollisionHelper(sizeX, sizeY, sizeZ, color) {
-            const geo = new THREE.BoxGeometry(sizeX, sizeY, sizeZ);
-            const edges = new THREE.EdgesGeometry(geo);
-            const mat = new THREE.LineBasicMaterial({ color: color });
-            return new THREE.LineSegments(edges, mat);
-        }
-
-        function showCollisionBoxes() {
-            hideCollisionBoxes();
-
-            // Car collision box
-            debugCarBox = createCollisionHelper(2.2 * 2, 2, 3.0 * 2, 0x00ff00);
-            debugCarBox.position.y = 1;
-            car.add(debugCarBox);
-
-            // Obstacle collision boxes
-            const obstacles = gameMode === 'endless' ? endlessObstacles : (gameMode === 'custom' ? customObstacles : []);
-            obstacles.forEach(obs => {
-                if (!obs.visible) return;
-                let hitX = 2.2;
-                let hitZ = 3.0;
-                if (obs.userData.type === 'autoshop') {
-                    hitX = 5.0;
-                    hitZ = 10.0;
-                }
-                const helper = createCollisionHelper(hitX * 2, 2, hitZ * 2, 0xff0000);
-                helper.position.y = 1;
-                obs.add(helper);
-                debugCollisionBoxes.push(helper);
-            });
-
-            debugCollisionsEl.textContent = 'Boxes: ON (' + (obstacles.length + 1) + ')';
-        }
-
-        function hideCollisionBoxes() {
-            if (debugCarBox) {
-                car.remove(debugCarBox);
-                debugCarBox = null;
-            }
-            debugCollisionBoxes.forEach(h => {
-                if (h.parent) h.parent.remove(h);
-            });
-            debugCollisionBoxes = [];
-            debugCollisionsEl.textContent = 'Boxes: OFF';
-        }
-
-        function updateDebugInfo() {
-            if (!debugActive) return;
-
-            // FPS calculation
-            debugFrameCount++;
-            const now = performance.now();
-            const elapsed = now - debugLastTime;
-            if (elapsed >= 500) {
-                debugFPS = Math.round((debugFrameCount / elapsed) * 1000);
-                debugFrameCount = 0;
-                debugLastTime = now;
-            }
-            debugFPSEl.textContent = 'FPS: ' + debugFPS;
-
-            // Player info
-            const displaySpeed = Math.abs(Math.floor((speed / BASE_MAX_SPEED) * 10));
-            debugSpeedEl.textContent = 'Speed: ' + speed.toFixed(4) + ' (' + displaySpeed + ' MPH)';
-            debugPositionEl.textContent = 'Pos: ' + car.position.x.toFixed(1) + ', ' + car.position.y.toFixed(1) + ', ' + car.position.z.toFixed(1);
-            debugAngleEl.textContent = 'Angle: ' + (angle * (180 / Math.PI)).toFixed(1) + '°';
-
-            // Refresh collision boxes periodically (obstacles move/respawn)
-            if (isGameRunning && debugFrameCount === 0) {
-                showCollisionBoxes();
-            }
-        }
-
-        // --- Main Game Loop ---
+        // ═══════════════════════════════════════════════════════════
+        //  MAIN GAME LOOP
+        // ═══════════════════════════════════════════════════════════
         const speedUI = document.getElementById('speedometer');
 
         function animate() {
             requestAnimationFrame(animate);
             updateDebugInfo();
+            updateDriftParticles();
 
             if (isGameRunning) {
                 const isInvincible = Date.now() < boostEndTime;
-                
-                // 1. Collision & Rules depending on mode
+
+                // ── Coin spin animation ──
+                const activeCoinList = gameMode === 'endless' ? endlessObstacles : customObstacles;
+                activeCoinList.forEach(obs => {
+                    if (obs.userData.type === 'coin' && obs.visible) {
+                        obs.rotation.y += obs.userData.rotSpeed || 0.06;
+                        // Gentle bob
+                        obs.children.forEach(c => { c.position.y = 0.8 + Math.sin(Date.now() * 0.003 + obs.position.x) * 0.2; });
+                    }
+                });
+
+                // ── Mode-specific rules ──
                 let inPitStop = false;
                 if (gameMode === 'endless') {
                     endlessObstacles.forEach(obs => {
-                        if (obs.userData.type === 'autoshop') {
-                            if (Math.abs(car.position.z - obs.position.z) < 45 && Math.abs(car.position.x - obs.position.x) < 15) {
-                                inPitStop = true;
-                            }
+                        if (obs.userData.type === 'autoshop' &&
+                            Math.abs(car.position.z - obs.position.z) < 45 &&
+                            Math.abs(car.position.x - obs.position.x) < 15) {
+                            inPitStop = true;
                         }
                     });
-
                     if (!isInvincible && car.position.y <= 0.1 && Math.abs(car.position.x) > (ROAD_WIDTH / 2)) {
-                        if (!inPitStop) crashGame('grass');
+                        if (!inPitStop) { crashGame('grass'); return; }
                     }
                 } else if (gameMode === 'custom') {
-                    if (car.position.z < - (GRID_ROWS - 1) * CELL_SIZE) {
-                        winGame();
-                        return; 
-                    }
-
+                    if (car.position.z < -(GRID_ROWS - 1) * CELL_SIZE) { winGame(); return; }
                     const carCol = Math.floor((car.position.x + (CELL_SIZE / 2)) / CELL_SIZE) + Math.floor(GRID_COLS / 2);
                     const carRow = Math.floor(-car.position.z / CELL_SIZE);
-                    
                     if (carRow < 0 || carRow >= GRID_ROWS || carCol < 0 || carCol >= GRID_COLS) {
-                        if (!isInvincible && car.position.y <= 0.1) crashGame('grass');
+                        if (!isInvincible && car.position.y <= 0.1) { crashGame('grass'); return; }
                     } else {
                         const cellType = mapData[carRow][carCol];
-                        if (!isInvincible && car.position.y <= 0.1 && (cellType === 'grass' || cellType === 'tree' || cellType === 'rock' || cellType === 'crash')) {
-                            crashGame(cellType === 'grass' ? 'grass' : 'obstacle');
+                        if (!isInvincible && car.position.y <= 0.1 &&
+                            (cellType === 'grass' || cellType === 'tree' || cellType === 'rock' || cellType === 'crash')) {
+                            crashGame(cellType === 'grass' ? 'grass' : 'obstacle'); return;
                         }
                     }
                 }
 
-                if (!isGameRunning) return; 
+                if (!isGameRunning) return;
 
-                // Jump Physics
+                // ── Jump physics ──
                 if (car.position.y > 0 || verticalVelocity !== 0) {
-                    car.position.y += verticalVelocity;
+                    car.position.y  += verticalVelocity;
                     verticalVelocity -= GRAVITY;
-                    
-                    if (car.position.y <= 0) {
-                        car.position.y = 0;
-                        verticalVelocity = 0;
-                    }
+                    if (car.position.y <= 0) { car.position.y = 0; verticalVelocity = 0; }
                 }
 
-                // 2. Physics & Control
+                // ── Movement ──
                 const isOffRoad = gameMode === 'endless' && Math.abs(car.position.x) > (ROAD_WIDTH / 2 - 1) && !inPitStop;
-                const isSlowed = Date.now() < slowEndTime;
-                
-                // Speed calculation factoring in invincibility boost, offroad, and slow effect
+                const isSlowed  = Date.now() < slowEndTime;
+
                 let currentMaxSpeed = maxSpeed;
-                if (isInvincible) currentMaxSpeed = maxSpeed * 1.6;
-                else if (isOffRoad) currentMaxSpeed = OFFROAD_MAX_SPEED;
-                else if (isSlowed) currentMaxSpeed = maxSpeed * 0.4;
-                
+                if (isInvincible)     currentMaxSpeed = maxSpeed * 1.6;
+                else if (isOffRoad)   currentMaxSpeed = OFFROAD_MAX_SPEED;
+                else if (isSlowed)    currentMaxSpeed = maxSpeed * 0.4;
+
                 let currentAccel = ACCELERATION;
                 if (isSlowed && !isInvincible) currentAccel *= 0.5;
 
                 if (isInvincible) {
-                    speed += ACCELERATION * 3; // Auto boost rapidly to high max speed
+                    speed += ACCELERATION * 3;
                 } else if (keys.up) {
                     speed += currentAccel;
                 } else if (keys.down) {
@@ -1698,85 +1862,76 @@
                     if (speed > 0) { speed -= FRICTION; if (speed < 0) speed = 0; }
                     else if (speed < 0) { speed += FRICTION; if (speed > 0) speed = 0; }
                 }
-
                 speed = Math.max(Math.min(speed, currentMaxSpeed), -maxSpeed / 2);
-                
-                // Record distance traveled (convert to coins at game over)
                 distanceTraveled += Math.abs(speed);
 
+                // ── Steering & tilt ──
                 let targetTilt = 0;
                 if (Math.abs(speed) > 0.05) {
                     const dir = speed > 0 ? 1 : -1;
-                    // Apply Traction Upgrade here:
-                    const currentTurnSpeed = TURN_SPEED + (tractionLevel * 0.005); 
-                    
-                    if (keys.a) { angle += currentTurnSpeed * dir; targetTilt = 0.15; }
+                    const currentTurnSpeed = TURN_SPEED + (tractionLevel * 0.005);
+                    if (keys.a) { angle += currentTurnSpeed * dir; targetTilt =  0.15; }
                     if (keys.d) { angle -= currentTurnSpeed * dir; targetTilt = -0.15; }
                 }
-
                 carBodyGroup.rotation.z += (targetTilt - carBodyGroup.rotation.z) * 0.1;
 
                 car.rotation.y = angle;
                 car.position.x -= Math.sin(angle) * speed;
                 car.position.z -= Math.cos(angle) * speed;
 
-                // 3. World Updates & Objects
+                // ── Drift system ──
+                updateDrift();
+                if (isDrifting && Math.random() < 0.4) spawnDriftParticle();
+
+                // ── Combo timer decay ──
+                if (comboCount > 0) {
+                    comboTimer -= 16; // ~1 frame at 60fps
+                    if (comboTimer <= 0) resetCombo();
+                }
+
+                // ── Checkpoint system ──
+                checkCheckpoints();
+
+                // ── World updates ──
                 if (gameMode === 'endless') {
-                    endlessGround.position.x = car.position.x; endlessGround.position.z = car.position.z;
-                    grassTexture.offset.x = (car.position.x / 1000) * 100; grassTexture.offset.y = -(car.position.z / 1000) * 100;
-                    endlessRoad.position.z = car.position.z;
-                    roadTexture.offset.y = -(car.position.z / (CHUNK_SIZE + 100)) * ((CHUNK_SIZE + 100) / 10);
+                    endlessGround.position.x = car.position.x;
+                    endlessGround.position.z = car.position.z;
+                    grassTexture.offset.x    = (car.position.x / 1000) * 100;
+                    grassTexture.offset.y    = -(car.position.z / 1000) * 100;
+                    endlessRoad.position.z   = car.position.z;
+                    roadTexture.offset.y     = -(car.position.z / (CHUNK_SIZE + 100)) * ((CHUNK_SIZE + 100) / 10);
 
                     endlessProps.forEach(prop => {
                         if (prop.position.z > car.position.z + 20) {
                             prop.position.z -= CHUNK_SIZE;
-                            prop.position.x = (Math.random() > 0.5 ? 1 : -1) * ((ROAD_WIDTH / 2 + 5) + Math.random() * 80);
+                            prop.position.x  = (Math.random() > 0.5 ? 1 : -1) * ((ROAD_WIDTH / 2 + 5) + Math.random() * 80);
                         }
                         if (prop.position.z < car.position.z - CHUNK_SIZE + 20) prop.position.z += CHUNK_SIZE;
                     });
 
                     endlessObstacles.forEach(obs => {
-                        if (obs.userData.type === 'car') obs.position.z -= obs.userData.speed;
+                        if (obs.userData.type === 'car')   obs.position.z -= obs.userData.speed;
                         if (obs.userData.type === 'rager') {
                             obs.position.z -= obs.userData.speed;
                             if (obs.position.z < car.position.z && obs.position.z > car.position.z - 150) {
-                                // Add a turn delay so the player can juke the rager
                                 obs.userData.turnDelay = (obs.userData.turnDelay || 0) - 1;
-                                if (obs.userData.turnDelay <= 0) {
-                                    obs.userData.targetX = car.position.x;
-                                    obs.userData.turnDelay = 20; // Frames before updating target
-                                }
-                                
-                                let targetX = obs.userData.targetX !== undefined ? obs.userData.targetX : car.position.x;
-
-                                if (obs.position.x < targetX - 0.5) {
-                                    obs.position.x += 0.10; obs.rotation.y = -0.2;
-                                } else if (obs.position.x > targetX + 0.5) {
-                                    obs.position.x -= 0.10; obs.rotation.y = 0.2;
-                                } else {
-                                    obs.rotation.y = 0;
-                                }
-                            } else {
-                                obs.rotation.y = 0;
-                            }
+                                if (obs.userData.turnDelay <= 0) { obs.userData.targetX = car.position.x; obs.userData.turnDelay = 20; }
+                                const tx = obs.userData.targetX !== undefined ? obs.userData.targetX : car.position.x;
+                                if      (obs.position.x < tx - 0.5) { obs.position.x += 0.10; obs.rotation.y = -0.2; }
+                                else if (obs.position.x > tx + 0.5) { obs.position.x -= 0.10; obs.rotation.y =  0.2; }
+                                else                                  { obs.rotation.y = 0; }
+                            } else { obs.rotation.y = 0; }
                         }
 
-                        let despawnDistance = 20;
-                        if (obs.userData.type === 'autoshop') {
-                            despawnDistance = 60; // Keep the auto shop alive longer so it doesn't despawn under your tires!
-                        }
-
-                        if (obs.position.z > car.position.z + despawnDistance) {
+                        const despawn = obs.userData.type === 'autoshop' ? 60 : 20;
+                        if (obs.position.z > car.position.z + despawn) {
                             obs.position.z = car.position.z - CHUNK_SIZE - Math.random() * CHUNK_SIZE;
-                            
-                            if (obs.userData.type === 'autoshop') {
-                                obs.position.x = (Math.random() > 0.5 ? 1 : -1) * (ROAD_WIDTH / 2 + 5);
-                            } else {
-                                obs.position.x = (Math.random() - 0.5) * (ROAD_WIDTH - 6);
-                            }
-                            
-                            obs.userData.hit = false; 
-                            obs.visible = true;       
+                            obs.position.x = obs.userData.type === 'autoshop'
+                                ? (Math.random() > 0.5 ? 1 : -1) * (ROAD_WIDTH / 2 + 5)
+                                : (Math.random() - 0.5) * (ROAD_WIDTH - 6);
+                            obs.userData.hit = false;
+                            obs.userData.dodgeCounted = false;
+                            obs.visible = true;
                             if (obs.userData.type === 'autoshop') {
                                 const cross = obs.getObjectByName('healCross');
                                 if (cross) cross.visible = true;
@@ -1791,73 +1946,52 @@
 
                         handleObstacleCollision(obs);
                     });
+
                 } else if (gameMode === 'custom') {
                     customObstacles.forEach(obs => {
-                        if (obs.userData.type === 'car') obs.position.z -= obs.userData.speed;
+                        if (obs.userData.type === 'car')   obs.position.z -= obs.userData.speed;
                         if (obs.userData.type === 'rager') {
                             obs.position.z -= obs.userData.speed;
                             if (obs.position.z < car.position.z && obs.position.z > car.position.z - 150) {
-                                // Add a turn delay so the player can juke the rager
                                 obs.userData.turnDelay = (obs.userData.turnDelay || 0) - 1;
-                                if (obs.userData.turnDelay <= 0) {
-                                    obs.userData.targetX = car.position.x;
-                                    obs.userData.turnDelay = 20; // Frames before updating target
-                                }
-                                
-                                let targetX = obs.userData.targetX !== undefined ? obs.userData.targetX : car.position.x;
-
-                                if (obs.position.x < targetX - 0.5) {
-                                    obs.position.x += 0.10; obs.rotation.y = -0.2;
-                                } else if (obs.position.x > targetX + 0.5) {
-                                    obs.position.x -= 0.10; obs.rotation.y = 0.2;
-                                } else {
-                                    obs.rotation.y = 0;
-                                }
-                            } else {
-                                obs.rotation.y = 0;
-                            }
+                                if (obs.userData.turnDelay <= 0) { obs.userData.targetX = car.position.x; obs.userData.turnDelay = 20; }
+                                const tx = obs.userData.targetX !== undefined ? obs.userData.targetX : car.position.x;
+                                if      (obs.position.x < tx - 0.5) { obs.position.x += 0.10; obs.rotation.y = -0.2; }
+                                else if (obs.position.x > tx + 0.5) { obs.position.x -= 0.10; obs.rotation.y =  0.2; }
+                                else                                  { obs.rotation.y = 0; }
+                            } else { obs.rotation.y = 0; }
                         }
-
                         handleObstacleCollision(obs);
                     });
                 }
 
-                if (!isGameRunning) return; 
+                if (!isGameRunning) return;
 
-                // Lighting & Aesthetics update
+                // ── Lighting ──
                 dirLight.position.set(car.position.x + 50, 100, car.position.z + 20);
                 dirLight.target = car;
 
-                // Handle Powerup Visuals
-                if (Date.now() < invertEndTime) {
-                    document.body.style.filter = 'invert(1)';
-                } else if (Date.now() < slowEndTime) {
-                    document.body.style.filter = 'sepia(0.8) hue-rotate(-50deg)'; // Give a dusty, brownish tint when slowed
-                } else {
-                    document.body.style.filter = 'none';
-                }
+                // ── Powerup visuals ──
+                if      (Date.now() < invertEndTime) document.body.style.filter = 'invert(1)';
+                else if (Date.now() < slowEndTime)   document.body.style.filter = 'sepia(0.8) hue-rotate(-50deg)';
+                else                                  document.body.style.filter = 'none';
 
-                // Glowing Car during boost
-                if (isInvincible) {
-                    carChassisMesh.material.emissive.setHex(0xffaa00);
-                } else {
-                    carChassisMesh.material.emissive.setHex(0x000000);
-                }
+                carChassisMesh.material.emissive.setHex(isInvincible ? 0xffaa00 : 0x000000);
 
-                const displaySpeed = Math.abs(Math.floor((speed / BASE_MAX_SPEED) * 10)); 
+                const displaySpeed = Math.abs(Math.floor((speed / BASE_MAX_SPEED) * 10));
                 speedUI.innerText = displaySpeed + " MPH";
             }
 
             updateAudio();
 
-            // --- Camera System ---
             camera.fov = 60 + (Math.abs(speed) / maxSpeed) * 25;
             camera.updateProjectionMatrix();
-
             renderer.render(scene, camera);
         }
 
-        // --- 2D Mini Arcade Logic ---
+        // ═══════════════════════════════════════════════════════════
+        //  2D ARCADE
+        // ═══════════════════════════════════════════════════════════
         let isArcadeRunning = false;
         let arcCanvas, arcCtx;
         let arcCar = { x: 185, y: 500, w: 30, h: 50, speed: 5 };
@@ -1873,14 +2007,8 @@
             arcCtx = arcCanvas.getContext('2d');
             isArcadeRunning = true;
             initAudio();
-            if (audioCtx) {
-                nextNoteTime = audioCtx.currentTime + 0.1;
-            }
-            arcGameOver = false;
-            arcCar.x = 185;
-            arcObs = [];
-            arcScore = 0;
-            arcFrame = 0;
+            if (audioCtx) nextNoteTime = audioCtx.currentTime + 0.1;
+            arcGameOver = false; arcCar.x = 185; arcObs = []; arcScore = 0; arcFrame = 0;
             requestAnimationFrame(arcadeLoop);
         }
 
@@ -1894,78 +2022,49 @@
             if (!isArcadeRunning) return;
             requestAnimationFrame(arcadeLoop);
             updateAudio();
-
             if (arcGameOver) return;
 
-            // Update using existing 'keys' object mapped from the main game
             if (keys.a && arcCar.x > 0) arcCar.x -= arcCar.speed;
             if (keys.d && arcCar.x < 400 - arcCar.w) arcCar.x += arcCar.speed;
 
             arcFrame++;
-            let spawnRate = Math.max(15, 40 - Math.floor(arcScore / 5)); // gets faster
+            const spawnRate = Math.max(15, 40 - Math.floor(arcScore / 5));
             if (arcFrame % spawnRate === 0) {
-                arcObs.push({ 
-                    x: Math.random() * 370, 
-                    y: -50, 
-                    w: 30, 
-                    h: 30, 
-                    speed: 4 + (arcScore * 0.1) 
-                });
+                arcObs.push({ x: Math.random() * 370, y: -50, w: 30, h: 30, speed: 4 + arcScore * 0.1 });
             }
 
-            arcCtx.fillStyle = '#222';
-            arcCtx.fillRect(0, 0, 400, 600); // Road
-
-            // Road lines
+            arcCtx.fillStyle = '#222'; arcCtx.fillRect(0, 0, 400, 600);
             arcCtx.fillStyle = '#fff';
-            for(let i=0; i<600; i+=40) {
-                arcCtx.fillRect(195, (i + arcFrame*5) % 600, 10, 20);
-            }
+            for (let i = 0; i < 600; i += 40) arcCtx.fillRect(195, (i + arcFrame * 5) % 600, 10, 20);
 
-            // Draw Car
-            arcCtx.fillStyle = '#d92b2b';
-            arcCtx.fillRect(arcCar.x, arcCar.y, arcCar.w, arcCar.h); 
-            arcCtx.fillStyle = '#111'; // windshield
-            arcCtx.fillRect(arcCar.x+5, arcCar.y+10, arcCar.w-10, 15);
+            arcCtx.fillStyle = '#d92b2b'; arcCtx.fillRect(arcCar.x, arcCar.y, arcCar.w, arcCar.h);
+            arcCtx.fillStyle = '#111';    arcCtx.fillRect(arcCar.x+5, arcCar.y+10, arcCar.w-10, 15);
 
-            // Draw Obstacles
             arcCtx.fillStyle = '#2288e6';
             for (let i = arcObs.length - 1; i >= 0; i--) {
-                let obs = arcObs[i];
-                obs.y += obs.speed;
+                const obs = arcObs[i]; obs.y += obs.speed;
                 arcCtx.fillRect(obs.x, obs.y, obs.w, obs.h);
-                
-                // Collision check
                 if (arcCar.x < obs.x + obs.w && arcCar.x + arcCar.w > obs.x &&
-                    arcCar.y < obs.y + obs.h && arcCar.y + arcCar.h > obs.y) {
+                    arcCar.y < obs.y + obs.h  && arcCar.y + arcCar.h > obs.y) {
                     arcGameOver = true;
-                    arcCtx.fillStyle = 'rgba(0,0,0,0.7)';
-                    arcCtx.fillRect(0,0,400,600);
-                    arcCtx.fillStyle = '#ff0000';
-                    arcCtx.font = 'bold 40px Courier New';
-                    arcCtx.textAlign = 'center';
+                    arcCtx.fillStyle = 'rgba(0,0,0,0.7)'; arcCtx.fillRect(0,0,400,600);
+                    arcCtx.fillStyle = '#ff0000'; arcCtx.font = 'bold 40px Courier New'; arcCtx.textAlign = 'center';
                     arcCtx.fillText("CRASH!", 200, 300);
-                    arcCtx.fillStyle = '#ffffff';
-                    arcCtx.font = 'bold 20px Courier New';
+                    arcCtx.fillStyle = '#ffffff'; arcCtx.font = 'bold 20px Courier New';
                     arcCtx.fillText("Score: " + arcScore, 200, 340);
                     setTimeout(closeArcade, 2500);
                 }
-
-                if (obs.y > 600) {
-                    arcObs.splice(i, 1);
-                    arcScore++;
-                }
+                if (obs.y > 600) { arcObs.splice(i, 1); arcScore++; }
             }
 
-            if(!arcGameOver) {
-                arcCtx.fillStyle = '#ffffff';
-                arcCtx.font = 'bold 20px Courier New';
-                arcCtx.textAlign = 'left';
+            if (!arcGameOver) {
+                arcCtx.fillStyle = '#ffffff'; arcCtx.font = 'bold 20px Courier New'; arcCtx.textAlign = 'left';
                 arcCtx.fillText("Score: " + arcScore, 10, 30);
                 arcCtx.fillText("A/D to Steer", 10, 580);
             }
         }
 
+        // ── Start ──
         showMainMenu();
         animate();
     </script>
